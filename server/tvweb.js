@@ -628,7 +628,7 @@ remotebuttons.init({
   },
   onAnyKey: function (code) {
     screensavers.keyPressed();
-    idleoff.activity('key ' + code);
+    idleoff.keyPressed(code);
   }
 });
 

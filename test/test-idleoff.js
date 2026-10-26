@@ -69,6 +69,15 @@ assert.deepEqual(s.calls, []);
 s.advance(59 * 60000);
 assert.strictEqual(s.lunaCalls.length, 2, 'the hour starts again from the press');
 
+// The remote's own event every 3 minutes is not a press.
+s = setup(60);
+s.advance(59 * 60000);
+idleoff.keyPressed(1199);
+s.advance(60000);
+assert.strictEqual(s.lunaCalls.length, 1, 'key 1199 does not restart the count');
+idleoff.keyPressed(28);
+assert.strictEqual(s.lunaCalls[1], 'com.webos.notification/closeAlert', 'a real key does');
+
 // A press part way through starts the hour again.
 s = setup(60);
 s.advance(40 * 60000);

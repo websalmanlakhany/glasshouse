@@ -98,6 +98,18 @@ function activity(source) {
   closeWarning();
 }
 
+/*
+ * Key events no one pressed: 1199 is KEY_LGE_CURSOR_HIDE (1207 less 8 in
+ * /usr/share/X11/xkb/keycodes/lg), the pointer hiding itself. A G4 (webOS 9)
+ * reported it on the Magic Remote's device every 3 minutes with the remote
+ * untouched, which cancelled each switch-off.
+ */
+var NOT_PRESSES = [1199];
+
+function keyPressed(code) {
+  if (NOT_PRESSES.indexOf(code) === -1) activity('key ' + code);
+}
+
 function check() {
   if (!minutes() || !tvOn()) {
     lastActivity = now();
@@ -164,6 +176,7 @@ module.exports = {
   apply: apply,
   check: check,
   activity: activity,
+  keyPressed: keyPressed,
   minutes: minutes,
   status: status
 };
