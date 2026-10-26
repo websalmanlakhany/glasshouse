@@ -366,7 +366,7 @@ function holdVolumeControls() {
   if (q('vol-slider')) q('vol-slider').disabled = true;
   if (q('vol-wrap')) q('vol-wrap').classList.add('off');
   if (q('mute')) q('mute').disabled = true;
-  if (q('vol-steps')) q('vol-steps').querySelectorAll('button').forEach(b => { b.disabled = true; });
+  document.querySelectorAll('#vol-steps button, .rmt-vol>button').forEach(b => { b.disabled = true; });
 }
 
 function setVolFromPointer(e) {
@@ -596,10 +596,10 @@ const KEYBOARD_REMOTE = {
 };
 let keyboardRemoteAt = 0;
 document.addEventListener('keydown', e => {
-  if (activeTab !== 'control' || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey) return;
+  if ((activeTab !== 'control' && activeTab !== 'remote') || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey) return;
   const el = e.target;
   if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
-  if (document.querySelector('.modal-backdrop:not([hidden])') || document.body.classList.contains('nav-open')) return;
+  if (document.querySelector('.modal-backdrop:not([hidden]), .rmt-sheet:not([hidden])') || document.body.classList.contains('nav-open')) return;
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   const rcu = KEYBOARD_REMOTE[key];
   if (!rcu && key !== ' ' && key !== 'k') return;
@@ -622,35 +622,37 @@ document.addEventListener('keydown', e => {
 });
 
 /*
- * Volume - and +: held, they repeat as the remote's keys do. A step waits for
- * the one before it, so a slow TV never has a queue of them to work through
- * after the button is let go. Enter or Space on a focused button steps once.
+ * Volume - and +, and the D-pad's arrows: held, they repeat as the remote's own
+ * keys do. A step waits for the one before it, so a slow TV never has a queue
+ * of them to work through after the button is let go. Enter or Space on a
+ * focused button steps once.
  */
-(function initVolumeSteps() {
-  const box = q('vol-steps');
-  if (!box) return;
+(function initHeldKeys() {
   const REPEAT_DELAY_MS = 400, REPEAT_GAP_MS = 120;
   let held = 0;
-  async function repeat(step, id) {
-    await sendCommand('volumeStep', step);
-    if (held !== id) return;
-    setTimeout(() => { if (held === id) repeat(step, id); }, REPEAT_GAP_MS);
-  }
-  function release() { held = 0; }
-  box.querySelectorAll('button[data-vol-step]').forEach(b => {
-    const step = parseInt(b.dataset.volStep, 10);
-    b.addEventListener('pointerdown', e => {
-      if ((e.pointerType === 'mouse' && e.button !== 0) || b.disabled) return;
+  function bind(btn, send) {
+    async function repeat(id) {
+      await send();
+      if (held !== id) return;
+      setTimeout(() => { if (held === id) repeat(id); }, REPEAT_GAP_MS);
+    }
+    btn.addEventListener('pointerdown', e => {
+      if ((e.pointerType === 'mouse' && e.button !== 0) || btn.disabled) return;
       e.preventDefault();
       const id = held = Date.now();
-      sendCommand('volumeStep', step);
-      setTimeout(() => { if (held === id) repeat(step, id); }, REPEAT_DELAY_MS);
+      send();
+      setTimeout(() => { if (held === id) repeat(id); }, REPEAT_DELAY_MS);
     });
-    b.addEventListener('click', e => { if (e.detail === 0) sendCommand('volumeStep', step); });
-    b.addEventListener('contextmenu', e => e.preventDefault());
-  });
+    btn.addEventListener('click', e => { if (e.detail === 0) send(); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  document.querySelectorAll('button[data-vol-step]').forEach(b =>
+    bind(b, () => sendCommand('volumeStep', parseInt(b.dataset.volStep, 10))));
+  document.querySelectorAll('button[data-hold][data-rcu]').forEach(b =>
+    bind(b, () => sendCommand('rcu', b.dataset.rcu)));
   // On the window: a button disabled mid-hold gets no pointerup of its own.
-  ['pointerup', 'pointercancel', 'blur'].forEach(ev => window.addEventListener(ev, release));
+  ['pointerup', 'pointercancel', 'blur'].forEach(ev =>
+    window.addEventListener(ev, () => { held = 0; }));
 })();
 
 // D-pad disclosure: uncollapse by default on mobile so the TV remote is immediately accessible.
@@ -702,13 +704,22 @@ function updateDpadMobileDefault() {
   const touches = new Map();
   let downAt = 0, travel = 0, scrolled = false;
 
+  // A request that never answers would hold every move after it, and the
+  // pointer would stop however the pad is dragged.
+  const POST_TIMEOUT_MS = 2000;
   async function post(value) {
-    const r = await fetch(api('/api/control'), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'pointer', value })
-    });
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error || t('common.actionFailed', 'Action failed'));
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), POST_TIMEOUT_MS);
+    try {
+      const r = await fetch(api('/api/control'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pointer', value }), signal: abort.signal
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || t('common.actionFailed', 'Action failed'));
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async function pump() {
@@ -733,7 +744,7 @@ function updateDpadMobileDefault() {
       await post(value);
     } catch (e) {
       dx = dy = scrollPx = 0; clickWanted = false;
-      showErr(e.message);
+      if (e.name !== 'AbortError') showErr(e.message);
     }
     sending = false;
     pump();
@@ -753,7 +764,15 @@ function updateDpadMobileDefault() {
   });
   pad.addEventListener('pointermove', e => {
     const last = touches.get(e.pointerId);
-    if (!last) return;
+    if (!last) {
+      // A mouse moves the pointer just by passing over the pad, and a click clicks.
+      if (e.pointerType === 'mouse') {
+        dx += e.movementX * SPEED;
+        dy += e.movementY * SPEED;
+        pump();
+      }
+      return;
+    }
     const mx = e.clientX - last.x, my = e.clientY - last.y;
     touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     travel += Math.abs(mx) + Math.abs(my);
@@ -776,15 +795,39 @@ function updateDpadMobileDefault() {
       pump();
     }
   }
+  // touch-action stops the page, but not the Android app around it, panning.
+  pad.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
   pad.addEventListener('pointerup', e => end(e, true));
   pad.addEventListener('pointercancel', e => end(e, false));
 
-  // For a mouse, which has no two-finger swipe: three notches a press.
-  const SCROLL_BUTTON_NOTCHES = 3;
-  function scrollButton(id, sign) {
-    const b = q(id);
-    if (b) b.addEventListener('click', () => { scrollPx += sign * SCROLL_BUTTON_NOTCHES * SCROLL_PX; pump(); });
+  // The strip over the pad's right edge, as in LG's ThinQ app: dragged up, it
+  // scrolls up. Works for a mouse too, which has no two-finger swipe.
+  const strip = q('tp-scroll');
+  if (strip) {
+    let lastY = null;
+    strip.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      try { strip.setPointerCapture(e.pointerId); } catch (err) {}
+      lastY = e.clientY;
+      strip.classList.add('down');
+    });
+    strip.addEventListener('pointermove', e => {
+      if (lastY === null) return;
+      scrollPx -= e.clientY - lastY;
+      lastY = e.clientY;
+      pump();
+    });
+    const release = () => { lastY = null; strip.classList.remove('down'); };
+    strip.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+    strip.addEventListener('pointerup', release);
+    strip.addEventListener('pointercancel', release);
+    // From the keyboard: three notches a press.
+    strip.addEventListener('keydown', e => {
+      const sign = e.key === 'ArrowUp' ? 1 : e.key === 'ArrowDown' ? -1 : 0;
+      if (!sign) return;
+      e.preventDefault();
+      scrollPx += sign * 3 * SCROLL_PX;
+      pump();
+    });
   }
-  scrollButton('tp-scroll-up', 1);
-  scrollButton('tp-scroll-down', -1);
 })();
