@@ -469,6 +469,7 @@
   <div class="rmt-seg" role="group" aria-label="Pad" data-t-aria-label="rmt.pad">
     <button type="button" data-pad="touchpad" data-t="ctl.touchpad">Touchpad</button><button
       type="button" data-pad="dpad" data-t="ctl.dpad">D-pad</button>
+    <button type="button" class="rmt-kb-key" data-sheet="keyboard" data-t="rmt.kb">Keyboard</button>
   </div>
   <div class="rmt-stage" id="rmt-stage"></div>
 
@@ -481,6 +482,18 @@
     <div class="rmt-foot-keys">
       <div id="rmt-nav"></div>
       <div id="rmt-playback"></div>
+    </div>
+  </div>
+
+  <!-- The keyboard sheet's own control, kept here while its sheet is shut. -->
+  <div class="rmt-spare">
+    <div id="kbset">
+      <form class="toast-form" id="kb-form" novalidate>
+        <input type="text" id="kb-input" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="512"
+          placeholder="Type for the TV" data-t-placeholder="rmt.kb.placeholder">
+        <button type="submit" id="btn-kb" data-t="rmt.kb.send">Send</button>
+      </form>
+      <p class="sub" data-t="rmt.kb.note">Replaces the text in the TV's selected field, then presses Enter. Opens by itself when a field on the TV is selected.</p>
     </div>
   </div>
 </section>

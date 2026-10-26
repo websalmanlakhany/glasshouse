@@ -23,7 +23,8 @@ const RMT_SHEETS = {
   apps:    { title: () => t('tab.apps', 'Apps'),              ids: ['apps'] },
   sound:   { title: () => t('ctl.sound', 'Sound'),            ids: ['soundset'] },
   picture: { title: () => t('ctl.picture', 'Picture'),        ids: ['pictureset'] },
-  url:     { title: () => t('ctl.openUrl', 'Open a web page'), ids: ['urlset'] }
+  url:     { title: () => t('ctl.openUrl', 'Open a web page'), ids: ['urlset'] },
+  keyboard: { title: () => t('rmt.kb', 'Keyboard'),          ids: ['kbset'] }
 };
 let rmtSheet = null;
 
@@ -104,8 +105,50 @@ function remoteSlots(on) {
   }
   slots.forEach(pair => remoteBorrow(q(pair[0]), q(pair[1])));
   showRemotePad(rmtPad);
+  pollKeyboard();
   // After the panel is shown and filled, so there is something to measure.
   setTimeout(sizeRemote, 0);
+}
+
+/*
+ * The keyboard: while this tab is open the server is asked, once a second,
+ * whether a text field on the TV has focus, and the sheet opens when one
+ * gains it, as LG's ThinQ app does. What is typed replaces the field's text.
+ */
+const KB_POLL_MS = 1000;
+const KB_INPUT_TYPES = { url: 'url', email: 'email', number: 'tel', phonenumber: 'tel' };
+let kbFocus = false;
+let kbTimer = null;
+
+async function pollKeyboard() {
+  clearTimeout(kbTimer);
+  kbTimer = null;
+  if (activeTab !== 'remote') return;
+  if (!document.hidden) {
+    try {
+      const k = await (await fetch(api('/api/keyboard'), { cache: 'no-store' })).json();
+      const input = q('kb-input');
+      if (k.focus && !kbFocus) {
+        input.type = k.hidden ? 'password' : (KB_INPUT_TYPES[k.contentType] || 'text');
+        input.value = '';
+        if (rmtSheet !== 'keyboard') openRemoteSheet('keyboard');
+      } else if (!k.focus && kbFocus && rmtSheet === 'keyboard' && !input.value) {
+        closeRemoteSheet();
+      }
+      kbFocus = !!k.focus;
+    } catch (e) { /* the next tick tries again */ }
+  }
+  if (activeTab === 'remote') kbTimer = setTimeout(pollKeyboard, KB_POLL_MS);
+}
+
+async function sendKeyboard() {
+  const input = q('kb-input');
+  if (!kbFocus) return showErr(t('rmt.kb.noField', 'Select a text field on the TV first.'));
+  const r = await sendCommand('type', { text: input.value, enter: true });
+  if (r && r.ok) {
+    input.value = '';
+    closeRemoteSheet();
+  }
 }
 
 (function initRemote() {
@@ -116,6 +159,7 @@ function remoteSlots(on) {
     b.addEventListener('click', () => showRemotePad(b.dataset.pad)));
   q('rmt-sheet-back').addEventListener('click', closeRemoteSheet);
   q('rmt-sheet-x').addEventListener('click', closeRemoteSheet);
+  q('kb-form').addEventListener('submit', e => { e.preventDefault(); sendKeyboard(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRemoteSheet(); });
   window.addEventListener('resize', sizeRemote);
 })();

@@ -696,6 +696,34 @@ app in front. Remote Keys puts its own filter first.
   `/mnt/lg/cmn_data/var/preferences/configd_factory_db.json`, kept across
   reboots. There is no delete method, and setting `null` is ignored.
 
+## Typing into the TV (G4, webOS 9.2.4)
+
+LG's ThinQ app types into the TV through its keyboard service, MaliitServer
+(`com.webos.service.ime`, `/usr/lib/libmaliit-plugins.so.1`), and root can
+do the same over luna.
+
+- `registerRemoteKeyboard {"subscribe":true}` answers `{"subscribed":true}`,
+  then reports each change of focus as `{"currentWidget":{"focus":true,
+  "contentType":"url","hiddenText":false,"cursorPosition":41,
+  "surroundingTextLength":63,...},"focusChanged":true}`, and `"focus":false`
+  when the field loses it. Edits are reported with `focusChanged` false.
+  `contentType` is one of number, phonenumber, email or url, or absent.
+- `insertText {"text":...,"replace":false}` types at the cursor;
+  `"replace":true` replaces the whole field. `deleteCharacters {"count":5,
+  "mode":"backspace"}` (or `"direct"`) deletes, and `sendEnterKey {}` presses
+  Enter: in the web browser's address bar, replacing with `github.com` and
+  pressing Enter opened it. Each worked from its own `luna-send -n 1`, not the
+  one holding the subscription. A missing `text` answers
+  `{"errorCode":-1000,"errorText":"Missing \"text\" parameter"}`.
+- YouTube (`youtube.leanback.v4`) draws its own keyboard: nothing is reported
+  when its search opens, and nothing typed this way reaches it. Launching it
+  with `contentTarget` `https://www.youtube.com/tv#/search?q=...` (with or
+  without `?launch=voice`) opened its home, not a search, and the letters'
+  key codes sent through `networkinput/test/sendKeyCode`, as evdev codes or
+  with 8 added, did nothing in its search.
+- Under load (an average of 16) every luna-send came back empty for a while;
+  `-w 6000` waited them out.
+
 ## Native key filters (C5, webOS 11.2.0)
 
 - **No JavaScript filters.** `surface-manager` runs on Weston
