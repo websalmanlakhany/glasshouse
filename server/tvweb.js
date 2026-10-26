@@ -94,6 +94,7 @@ var ntpClient = require('./lib/ntp');
 var history = require('./lib/history');
 var sshKeys = require('./lib/sshkeys');
 var screentime = require('./lib/screentime');
+var idleoff = require('./lib/idleoff');
 var remoteBattery = require('./lib/remotebattery');
 var backup = require('./lib/backup');
 var power = require('./lib/power');
@@ -309,6 +310,12 @@ var CONFIG = {
     action: 'off',
     appAction: 'home',
     apps: {}
+  },
+
+  // Minutes without a button press before the TV switches off, after a
+  // warning: 0 (never), 1 (for trying it out), 30, 60, 120 or 180.
+  idleOff: {
+    minutes: 0
   },
 
   device: {
@@ -619,8 +626,9 @@ remotebuttons.init({
   onHomeKey: function (down) {
     if (glasshouseHome) glasshouseHome.homeKey(down);
   },
-  onAnyKey: function () {
+  onAnyKey: function (code) {
     screensavers.keyPressed();
+    idleoff.keyPressed(code);
   }
 });
 
@@ -642,6 +650,7 @@ controls.init({
   ntp: ntpClient,
   history: history,
   backup: backup,
+  idleOff: idleoff,
   home: glasshouseHome,
   republishDiscovery: function () { republishDiscovery(); },
   tvApp: tvApp,
@@ -655,7 +664,11 @@ controls.init({
   tileHidingOff: TILE_HIDING_OFF
 });
 
-var doControl = controls.doControl;
+// Home Assistant's commands, each a button pressed for idleoff.js.
+function doControl(action, value, cb) {
+  idleoff.activity('Home Assistant: ' + action);
+  return controls.doControl(action, value, cb);
+}
 
 
 
@@ -889,6 +902,7 @@ routes.init({
   history: history,
   sshKeys: sshKeys,
   screentime: screentime,
+  idleOff: idleoff,
   backup: backup,
   configFile: CONFIG_FILE,
   controls: controls,
@@ -1785,6 +1799,16 @@ if (!CLI_MODE) {
   history.start();
   screentime.init({ config: CONFIG, liveState: liveState, control: controls.doControl, injectKey: controls.injectKey, keyBack: controls.KEY_BACK });
   screentime.start();
+  idleoff.init({
+    config: CONFIG,
+    liveState: liveState,
+    control: controls.doControl,
+    luna: luna,
+    sourceId: TOAST_SOURCE,
+    watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('idleoff', on); },
+    keysSupported: remotebuttons.isSupported
+  });
+  idleoff.start();
 
   if (glasshouseHome && homePicture) startGlasshouseHome();
   else releaseUnloadedHome();

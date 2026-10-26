@@ -1355,3 +1355,20 @@ switch"; `WoV PDM Mic` on ALSA card 1) and a switch for it on the TV.
 showed a toast saying the microphone is off. Before the flip, in Active
 Standby, voice activation was already off with reason `tvPowerState`, so
 wake-word listening does not run in standby.
+
+## LG's no-activity power off (G4, webOS 9)
+
+The menu's **4 Hours Auto Power Off** (Time & Timers → Timers) is a switch with
+the time fixed. Underneath, the `time` category has `noOperationAutoOff`, its
+`getSystemSettingDesc` listing `off`, `3`, `6`, `12` and `24` with
+`valueCheck` true, and its `ui.visible` false. It read `off` with the menu's
+switch shown. The same category has `noSignalAutoOff` and `autoOff15Min` (on),
+`dpmsAutoOff` (off) and `autoOff2HourOnTimer` (on). Checked on an OLED77G46LA,
+firmware 23.23.30, on 26 October 2026.
+
+The Magic Remote's device (`LGE M-RCU - Builtin [0]`) reports key 1199,
+`KEY_LGE_CURSOR_HIDE` (1207 in `/usr/share/X11/xkb/keycodes/lg`), when the
+pointer hides itself. With the remote untouched and an alert showing, it came
+every 3 minutes, at the same moment the apps reported `isAlertPopupExist:
+false`.
+

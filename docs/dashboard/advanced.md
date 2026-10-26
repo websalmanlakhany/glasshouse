@@ -40,6 +40,10 @@ LG's On Timer and Off Timer switch the TV on or off at a scheduled time, once or
 
 A TV switched on by the On Timer shuts back off after two hours without a button press, provided LG's automatic shutoff setting is enabled. On webOS 6 and later, an On Timer set to Live TV with no channel tuned turns the TV on to Home instead when triggered here.
 
+### Switch off when idle
+
+**Switch off when idle** switches the TV off after 30 minutes, 1, 2 or 3 hours without a button pressed (or 1 minute, to try it out), sooner than LG's own **4 Hours Auto Power Off** allows. A press on the remote counts, and so does any command from this dashboard or Home Assistant. When the time is up the TV shows a warning with a **Stay on** button, and switches off two minutes later unless a button is pressed. It needs power actions allowed (`allowPower`) and the remote's keys readable, and the row is hidden otherwise. It is set from the web dashboard only.
+
 ## Screen time
 
 ![Screen time: the limits switch, daily limit, bedtime, app and input limits, and what happens at each](../screenshots/advanced-screen-time.png)

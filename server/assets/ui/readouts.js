@@ -293,6 +293,7 @@ async function tick() {
       const arsVal = getLease('alwaysReadyScreen', d.alwaysReadyScreen);
       advPill('ars', 'btn_ars', arsVal !== undefined ? arsVal : d.alwaysReadyScreen);
       arOffRow(arVal ? d.alwaysReadyOff : undefined);
+      idleOffRow(d.idleOff);
       powerTimerRows(d.powerTimers);
       const wolVal = getLease('wakeOnLan', d.wakeOnLan);
       advPill('wol', 'btn_wol', wolVal !== undefined ? wolVal : d.wakeOnLan);

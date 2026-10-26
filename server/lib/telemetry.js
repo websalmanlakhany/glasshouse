@@ -19,6 +19,7 @@ var execFile = require('child_process').execFile;
 var names = require('./names');
 var power = require('./power');
 var timers = require('./timers');
+var idleoff = require('./idleoff');
 
 // LG's own reading where it exists. Models without it (the 55QNED826QB, webOS
 // 7.6) still have the kernel's thermal zone, in millidegrees: 68000 = 68 C.
@@ -1817,6 +1818,7 @@ function collectStats(cb) {
        { category: 'time' }, 30000, function (tm) {
     out.sleepTimer = (tm && tm.settings && tm.settings.sleepTimer) || 'off';
     out.powerTimers = timers.fromSettings(tm && tm.returnValue !== false ? tm.settings : null);
+    out.idleOff = idleoff.status();
     if (tm && tm.returnValue !== false) powerTimersSeen = out.powerTimers || {};
 
   lunaCachedFn('com.webos.service.settings/getSystemSettings',

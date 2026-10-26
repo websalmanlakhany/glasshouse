@@ -1043,6 +1043,19 @@ server again when switched on.
 
 Turning the screen off over LG's screen saver does not hold, so when it is
 showing, Back dismisses it first and the screen goes off 1.5 seconds later.
+
+## Switch off when idle
+
+`server/lib/idleoff.js` switches the TV off after `idleOff.minutes` (1, 30,
+60, 120 or 180) without a button press, as LG's own no-activity setting goes no
+lower than 3 hours. A press is any key the remote-buttons worker reads from
+`/dev/input`, kept running for this while a time is set, or a command through
+`/api/control` or MQTT. It checks every 30 seconds while the TV is on, and
+counts from the last press or from the TV coming on. When the time is up it
+shows an alert through `com.webos.notification/createAlert` with a Stay on
+button, or a toast if the alert is refused, and powers off two minutes later.
+A press in those two minutes closes the alert and starts the count again;
+pressing Stay on is itself a press.
 Either way, a screen back on 3 seconds after is turned off once more. Checks
 wait meanwhile, as the screen saver closing reports the screen on.
 
