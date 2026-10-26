@@ -745,7 +745,7 @@ function doControl(action, value, cb) {
         // webOS 3-5 (2016-2020) does not have com.webos.app.home (the launcher
         // is a system UI component); KEY_LEFTMETA (125) with a 100ms press/release
         // delay triggers the native home ribbon across webOS versions.
-        return lunaUrgent('com.webos.applicationManager/launch', { id: 'com.ecklf.luma' },
+        return lunaUrgent('com.webos.applicationManager/launch', { id: 'com.webos.app.home' },
                     function (r, raw, timing) {
                       logRcu(rcuName, rcuAt, timing, r && r.returnValue);
                       if (r && r.returnValue) {
