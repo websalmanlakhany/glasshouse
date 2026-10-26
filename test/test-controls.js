@@ -478,7 +478,7 @@ console.log('Running test-controls.js ...');
   console.debug = realDebug;
   assert.deepEqual(urgent, [
     'com.webos.service.networkinput/test/sendKeyCode {"keyCode":106}',
-    'com.webos.applicationManager/launch {"id":"com.webos.app.home"}'
+    'com.webos.applicationManager/launch {"id":"com.ecklf.luma"}'
   ]);
   assert.deepEqual(normal, ['com.webos.audio/setVolume'], 'only rcu takes the urgent path');
   assert.ok(/^rcu right: queued \d+ ms, luna 31 ms, ok$/.test(debugs[0]), debugs[0]);
