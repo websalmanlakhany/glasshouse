@@ -642,6 +642,14 @@ app in front. Remote Keys puts its own filter first.
   `com.webos.service.networkinput/test/sendKeyCode` with a Linux key code (the
   `IR_KEY_*` value in `/usr/share/X11/xkb/keycodes/lg` less 8: Blue 401, TV 377)
   reached a mapped key's filter like the remote's own press.
+- **The pointer moves through `ClickableMouse`.** On a G4 (webOS 9)
+  `networkinput/getPointerInputSocket` over luna answers with
+  `/tmp/netinput.pointer.sock`, which closes at once on a bare connection,
+  plain text or a WebSocket handshake alike. Relative moves written to the
+  `ClickableMouse` event device show and move the pointer; the same written to
+  `LGE Network Input` do nothing. `ClickableMouse` has no wheel (`REL=3`);
+  `REL_WHEEL` written to `LGE M-RCU - Builtin [0]` scrolls what the pointer
+  is on.
 - **A filter can send keys over the network.** On a C3 (webOS 10.2.2) the
   filter's own `lunaCall.send` to `networkinput/test/sendKeyCode` with play
   207, pause 119, stop 128, rewind 168, fast forward 208, volume up 115, volume
@@ -687,6 +695,34 @@ app in front. Remote Keys puts its own filter first.
   it has never heard of (`glasshouse.remoteKeys`) in
   `/mnt/lg/cmn_data/var/preferences/configd_factory_db.json`, kept across
   reboots. There is no delete method, and setting `null` is ignored.
+
+## Typing into the TV (G4, webOS 9.2.4)
+
+LG's ThinQ app types into the TV through its keyboard service, MaliitServer
+(`com.webos.service.ime`, `/usr/lib/libmaliit-plugins.so.1`), and root can
+do the same over luna.
+
+- `registerRemoteKeyboard {"subscribe":true}` answers `{"subscribed":true}`,
+  then reports each change of focus as `{"currentWidget":{"focus":true,
+  "contentType":"url","hiddenText":false,"cursorPosition":41,
+  "surroundingTextLength":63,...},"focusChanged":true}`, and `"focus":false`
+  when the field loses it. Edits are reported with `focusChanged` false.
+  `contentType` is one of number, phonenumber, email or url, or absent.
+- `insertText {"text":...,"replace":false}` types at the cursor;
+  `"replace":true` replaces the whole field. `deleteCharacters {"count":5,
+  "mode":"backspace"}` (or `"direct"`) deletes, and `sendEnterKey {}` presses
+  Enter: in the web browser's address bar, replacing with `github.com` and
+  pressing Enter opened it. Each worked from its own `luna-send -n 1`, not the
+  one holding the subscription. A missing `text` answers
+  `{"errorCode":-1000,"errorText":"Missing \"text\" parameter"}`.
+- YouTube (`youtube.leanback.v4`) draws its own keyboard: nothing is reported
+  when its search opens, and nothing typed this way reaches it. Launching it
+  with `contentTarget` `https://www.youtube.com/tv#/search?q=...` (with or
+  without `?launch=voice`) opened its home, not a search, and the letters'
+  key codes sent through `networkinput/test/sendKeyCode`, as evdev codes or
+  with 8 added, did nothing in its search.
+- Under load (an average of 16) every luna-send came back empty for a while;
+  `-w 6000` waited them out.
 
 ## Native key filters (C5, webOS 11.2.0)
 
@@ -1108,8 +1144,11 @@ Measured on 19 October 2026 on an OLED55G36LA.
   `apiadapter/audio/setMute { mute }` mutes it and shows LG's mute icon.
   Switching on from standby, or a reboot, clears the mute.
 - With sound through an ARC soundbar (`external_arc`),
-  `com.webos.audio/setVolume` left the volume as it was. Not looked into
-  further.
+  `com.webos.audio/setVolume` left the volume as it was. The same on a G4
+  (webOS 9), where the remote's volume keys sent through
+  `networkinput/test/sendKeyCode` do step the soundbar over CEC. Stepping the
+  slider's level with them, reading the level back between runs, still
+  stopped short of 0 to 50.
 - `com.webos.service.networkinput/controls/pause` paused a playing video in
   YouTube, Netflix, Apple TV and Peacock. Paramount+ only shows its player bar
   on the first one and pauses on the second. On YouTube's browse screen it

@@ -20,6 +20,7 @@ var ha = require('./ha');
 var fetchLib = require('./fetch');
 var devtools = require('./devtools');
 var names = require('./names');
+var keyboard = require('./keyboard');
 
 var HA_CATEGORIES = ha.HA_CATEGORIES;
 var HA_ENTITIES = ha.HA_ENTITIES;
@@ -1758,6 +1759,11 @@ function handleRequest(req, res) {
       var watched = historyModule && historyModule.status().running ? historyModule.totals() : null;
       send(res, 200, prometheusModule.render(s, versionStr, forwarded, clock, watched), 'text/plain; version=0.0.4; charset=utf-8');
     });
+  }
+
+  // Whether a text field on the TV has focus, for the Remote tab's keyboard.
+  if (pathname === '/api/keyboard') {
+    return send(res, 200, JSON.stringify(keyboard.status()));
   }
 
   if (pathname === '/api/stats') {

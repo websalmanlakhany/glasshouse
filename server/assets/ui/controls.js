@@ -377,7 +377,7 @@ function holdVolumeControls() {
   if (q('vol-slider')) q('vol-slider').disabled = true;
   if (q('vol-wrap')) q('vol-wrap').classList.add('off');
   if (q('mute')) q('mute').disabled = true;
-  if (q('vol-steps')) q('vol-steps').querySelectorAll('button').forEach(b => { b.disabled = true; });
+  document.querySelectorAll('#vol-steps button, .rmt-vol>button').forEach(b => { b.disabled = true; });
 }
 
 function setVolFromPointer(e) {
@@ -607,10 +607,10 @@ const KEYBOARD_REMOTE = {
 };
 let keyboardRemoteAt = 0;
 document.addEventListener('keydown', e => {
-  if (activeTab !== 'control' || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey) return;
+  if ((activeTab !== 'control' && activeTab !== 'remote') || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey) return;
   const el = e.target;
   if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
-  if (document.querySelector('.modal-backdrop:not([hidden])') || document.body.classList.contains('nav-open')) return;
+  if (document.querySelector('.modal-backdrop:not([hidden]), .rmt-sheet:not([hidden])') || document.body.classList.contains('nav-open')) return;
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   const rcu = KEYBOARD_REMOTE[key];
   if (!rcu && key !== ' ' && key !== 'k') return;
@@ -631,6 +631,40 @@ document.addEventListener('keydown', e => {
   }
   sendCommand('rcu', rcu);
 });
+
+/*
+ * Volume - and +, and the D-pad's arrows: held, they repeat as the remote's own
+ * keys do. A step waits for the one before it, so a slow TV never has a queue
+ * of them to work through after the button is let go. Enter or Space on a
+ * focused button steps once.
+ */
+(function initHeldKeys() {
+  const REPEAT_DELAY_MS = 400, REPEAT_GAP_MS = 120;
+  let held = 0;
+  function bind(btn, send) {
+    async function repeat(id) {
+      await send();
+      if (held !== id) return;
+      setTimeout(() => { if (held === id) repeat(id); }, REPEAT_GAP_MS);
+    }
+    btn.addEventListener('pointerdown', e => {
+      if ((e.pointerType === 'mouse' && e.button !== 0) || btn.disabled) return;
+      e.preventDefault();
+      const id = held = Date.now();
+      send();
+      setTimeout(() => { if (held === id) repeat(id); }, REPEAT_DELAY_MS);
+    });
+    btn.addEventListener('click', e => { if (e.detail === 0) send(); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  document.querySelectorAll('button[data-vol-step]').forEach(b =>
+    bind(b, () => sendCommand('volumeStep', parseInt(b.dataset.volStep, 10))));
+  document.querySelectorAll('button[data-hold][data-rcu]').forEach(b =>
+    bind(b, () => sendCommand('rcu', b.dataset.rcu)));
+  // On the window: a button disabled mid-hold gets no pointerup of its own.
+  ['pointerup', 'pointercancel', 'blur'].forEach(ev =>
+    window.addEventListener(ev, () => { held = 0; }));
+})();
 
 // D-pad disclosure: uncollapse by default on mobile so the TV remote is immediately accessible.
 function updateDpadMobileDefault() {
@@ -660,4 +694,151 @@ function updateDpadMobileDefault() {
       try { localStorage.setItem('dpadOpen', dpad.open ? '1' : '0'); } catch (e) {}
     }
   });
+})();
+
+/*
+ * Touchpad: a drag moves the TV's pointer, a tap clicks, a two-finger swipe
+ * scrolls. Movement builds up while a request is out and goes as one step when
+ * it answers, so the TV gets as many as the network carries and no queue
+ * builds behind a slow one.
+ */
+(function initTouchpad() {
+  const pad = q('touchpad');
+  if (!pad) return;
+  // Phone pixels to pointer steps: 1 is sluggish across a 4K screen.
+  const SPEED = 1.5;
+  const TAP_MS = 250, TAP_TRAVEL = 10;
+  // Finger travel per wheel notch.
+  const SCROLL_PX = 30;
+  let dx = 0, dy = 0, scrollPx = 0, clickWanted = false, sending = false;
+  // Fingers on the pad by pointer id, and where each was last.
+  const touches = new Map();
+  let downAt = 0, travel = 0, scrolled = false;
+
+  // A request that never answers would hold every move after it, and the
+  // pointer would stop however the pad is dragged.
+  const POST_TIMEOUT_MS = 2000;
+  async function post(value) {
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), POST_TIMEOUT_MS);
+    try {
+      const r = await fetch(api('/api/control'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pointer', value }), signal: abort.signal
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || t('common.actionFailed', 'Action failed'));
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function pump() {
+    if (sending) return;
+    const stepX = Math.round(dx), stepY = Math.round(dy);
+    // Fingers moving up scroll the page down, as on a phone.
+    const notches = Math.trunc(scrollPx / SCROLL_PX);
+    let value = null;
+    if (notches) {
+      scrollPx -= notches * SCROLL_PX;
+      value = { type: 'scroll', dy: notches };
+    } else if (stepX || stepY) {
+      dx -= stepX; dy -= stepY;
+      value = { type: 'move', dx: stepX, dy: stepY };
+    } else if (clickWanted) {
+      clickWanted = false;
+      value = { type: 'click' };
+    }
+    if (!value) return;
+    sending = true;
+    try {
+      await post(value);
+    } catch (e) {
+      dx = dy = scrollPx = 0; clickWanted = false;
+      if (e.name !== 'AbortError') showErr(e.message);
+    }
+    sending = false;
+    pump();
+  }
+
+  pad.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    try { pad.setPointerCapture(e.pointerId); } catch (err) {}
+    if (!touches.size) {
+      downAt = Date.now();
+      travel = 0;
+      scrolled = false;
+    }
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size > 1) scrolled = true;
+    pad.classList.add('down');
+  });
+  pad.addEventListener('pointermove', e => {
+    const last = touches.get(e.pointerId);
+    if (!last) {
+      // A mouse moves the pointer just by passing over the pad, and a click clicks.
+      if (e.pointerType === 'mouse') {
+        dx += e.movementX * SPEED;
+        dy += e.movementY * SPEED;
+        pump();
+      }
+      return;
+    }
+    const mx = e.clientX - last.x, my = e.clientY - last.y;
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    travel += Math.abs(mx) + Math.abs(my);
+    if (touches.size > 1) {
+      // Each finger adds its share, so two fingers count once between them.
+      scrollPx += my / touches.size;
+    } else if (!scrolled) {
+      dx += mx * SPEED;
+      dy += my * SPEED;
+    }
+    pump();
+  });
+  function end(e, tapped) {
+    if (!touches.delete(e.pointerId)) return;
+    try { pad.releasePointerCapture(e.pointerId); } catch (err) {}
+    if (touches.size) return;
+    pad.classList.remove('down');
+    if (tapped && !scrolled && Date.now() - downAt < TAP_MS && travel < TAP_TRAVEL) {
+      clickWanted = true;
+      pump();
+    }
+  }
+  // touch-action stops the page, but not the Android app around it, panning.
+  pad.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  pad.addEventListener('pointerup', e => end(e, true));
+  pad.addEventListener('pointercancel', e => end(e, false));
+
+  // The strip over the pad's right edge, as in LG's ThinQ app: dragged up, it
+  // scrolls up. Works for a mouse too, which has no two-finger swipe.
+  const strip = q('tp-scroll');
+  if (strip) {
+    let lastY = null;
+    strip.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      try { strip.setPointerCapture(e.pointerId); } catch (err) {}
+      lastY = e.clientY;
+      strip.classList.add('down');
+    });
+    strip.addEventListener('pointermove', e => {
+      if (lastY === null) return;
+      scrollPx -= e.clientY - lastY;
+      lastY = e.clientY;
+      pump();
+    });
+    const release = () => { lastY = null; strip.classList.remove('down'); };
+    strip.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+    strip.addEventListener('pointerup', release);
+    strip.addEventListener('pointercancel', release);
+    // From the keyboard: three notches a press.
+    strip.addEventListener('keydown', e => {
+      const sign = e.key === 'ArrowUp' ? 1 : e.key === 'ArrowDown' ? -1 : 0;
+      if (!sign) return;
+      e.preventDefault();
+      scrollPx += sign * 3 * SCROLL_PX;
+      pump();
+    });
+  }
 })();

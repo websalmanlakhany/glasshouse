@@ -6,10 +6,12 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 
 ![The D-pad opened: arrows around OK, with Back and Home below](../screenshots/control-dpad.png)
 
-* **D-pad navigation:** Directional arrows (Up, Down, Left, Right), OK/Select, Back, Home and Settings (LG's quick settings) to navigate webOS menus and built-in interfaces.
-* **Keyboard:** while the Control tab is open, a computer's keyboard works as the remote: the arrow keys, Enter for OK, Esc or Backspace for Back, H for Home, M for Settings, Space for play or pause and K for mute. Keys typed into a field, or pressed with Ctrl, Alt or Cmd, are left to the page.
+* **D-pad navigation:** Directional arrows (Up, Down, Left, Right), OK/Select, Back, Home and Settings (LG's quick settings) to navigate webOS menus and built-in interfaces. The arrows repeat while held, as the remote's keys do.
+* **Touchpad:** dragging a finger across the pad moves the TV's pointer, as LG's ThinQ app does, and a tap clicks. With a mouse the pointer follows it across the pad without a button held, and a click clicks. Dragging the strip along the pad's right edge scrolls, up to scroll up, as does a two-finger swipe. The server writes the moves to the TV's own mouse input device (`ClickableMouse`) and the scroll to the Magic Remote's.
+* **Open a web page:** below Back, Home and Settings in the D-pad, enter any HTTP or HTTPS URL to launch it immediately in the TV's native web browser.
+* **Keyboard:** while the Control or Remote tab is open, a computer's keyboard works as the remote: the arrow keys, Enter for OK, Esc or Backspace for Back, H for Home, M for Settings, Space for play or pause and K for mute. Keys typed into a field, or pressed with Ctrl, Alt or Cmd, are left to the page.
 * **Media playback:** Dedicated transport controls (Play, Pause, Stop, Rewind, Fast Forward) for active media players.
-* **Volume and mute:** Volume slider, precision step buttons (`+` and `-`), and a one-click mute toggle.
+* **Volume and mute:** Volume slider, step buttons (`+` and `-`) that repeat while held as the remote's keys do, and a one-click mute toggle.
 * **Source selection:** One-click switching across active TV inputs, including HDMI ports and Live TV, with an active indicator marking the current display source.
 
 ## Picture and sound
@@ -21,7 +23,7 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 * **Picture mode presets:** Instant switching between calibrated picture modes (such as Cinema, Filmmaker, ISF Expert, Game Optimizer). The presets offered adapt dynamically to what is currently playing, displaying Dolby Vision presets for Dolby Vision content and HDR presets for HDR signals.
 * **OLED light and backlight:** Live slider adjusting the panel luminance level for the active picture mode.
 * **Energy saving:** Quick toggles for Auto, Off, Minimum, Medium, Maximum, and Screen off energy-saving states.
-* **Sound output routing:** Switch audio output between TV Speaker, HDMI ARC, Optical, Headphone, and Bluetooth.
+* **Sound output routing:** Switch audio output between TV Speaker, HDMI ARC, Optical, Headphone, and Bluetooth. Bluetooth is always offered: with no audio device connected, choosing it opens the TV's own pairing prompt.
 
 ## Panel, timers and power
 
@@ -39,9 +41,7 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 ![Remote tools and utilities opened: a screen notification to send, and a web page to open](../screenshots/control-remote-tools.png)
 
 * **App launcher:** Launch installed webOS applications directly from the dashboard grid.
-* **Remote tools & utilities:** Collapsible section grouping quick on-screen actions:
-  * **Screen notifications:** Send instant on-screen toast notifications (up to 120 characters) to display messages on the TV.
-  * **Open a web page:** Enter any HTTP or HTTPS URL to launch it immediately in the TV's native web browser.
+* **Remote tools & utilities:** Collapsible section with **Screen notifications**: send instant on-screen toast notifications (up to 120 characters) to display messages on the TV.
 
 ![Control tab: panel, source, volume, playback, D-pad, sleep timer, picture, sound, apps, screen notifications, web page launcher and power](../screenshots/control.png)
 

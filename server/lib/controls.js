@@ -8,6 +8,8 @@ var execFile = require('child_process').execFile;
 var msg = require('./say').msg;
 var timers = require('./timers');
 var names = require('./names');
+var pointer = require('./pointer');
+var keyboard = require('./keyboard');
 
 /*
  * Measured on a B8 against the built-in player, watching playStateNow move:
@@ -247,6 +249,10 @@ function switchingOff(raw) {
 function doControl(action, value, cb) {
   cb = cb || function () {};
   if (!config.allowControl) return cb({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') });
+  // A drag sends dozens a second and changes nothing telemetry reads, so it
+  // skips the cache clearing below.
+  if (action === 'pointer') return pointer.send(value, cb);
+  if (action === 'type') return keyboard.type(value, cb);
 
   var origCb = cb;
   cb = function (r) {

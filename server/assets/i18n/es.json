@@ -1,4 +1,11 @@
 {
+ "rmt.close": {"text": "Cerrar", "from": "Close"},
+ "rmt.pad": {"text": "Pad", "from": "Pad"},
+ "rmt.kb": {"text": "Teclado", "from": "Keyboard"},
+ "rmt.kb.note": {"text": "Sustituye el texto del campo seleccionado en la TV y pulsa Intro. Se abre solo al seleccionar un campo en la TV.", "from": "Replaces the text in the TV's selected field, then presses Enter. Opens by itself when a field on the TV is selected."},
+ "rmt.kb.noField": {"text": "Selecciona primero un campo de texto en la TV.", "from": "Select a text field on the TV first."},
+ "rmt.kb.placeholder": {"text": "Escribe para la TV", "from": "Type for the TV"},
+ "rmt.kb.send": {"text": "Enviar", "from": "Send"},
  "search.clear": {"text": "Borrar búsqueda", "from": "Clear search"},
  "search.category": {"text": "Categoría: {category}", "from": "Category: {category}"},
  "search.count": {"text": "{n} resultados", "from": "{n} results"},
@@ -1266,9 +1273,9 @@
   "text": "Herramientas remotas y utilidades",
   "from": "Remote tools & utilities"
  },
- "ctl.remoteTools.sub": {
-  "text": "Notificación y página web",
-  "from": "Notification and web page"
+ "ctl.remoteTools.subToast": {
+  "text": "Notificación en pantalla",
+  "from": "Screen notification"
  },
  "ctl.rewind": {
   "text": "Rebobinar",
@@ -5213,6 +5220,10 @@
  "tab.server": {
   "text": "Servidor",
   "from": "Server"
+ },
+ "tab.remote": {
+  "text": "Mando",
+  "from": "Remote"
  },
  "tab.serviceMenu": {
   "text": "Menú de servicio",
