@@ -704,13 +704,22 @@ function updateDpadMobileDefault() {
   const touches = new Map();
   let downAt = 0, travel = 0, scrolled = false;
 
+  // A request that never answers would hold every move after it, and the
+  // pointer would stop however the pad is dragged.
+  const POST_TIMEOUT_MS = 2000;
   async function post(value) {
-    const r = await fetch(api('/api/control'), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'pointer', value })
-    });
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error || t('common.actionFailed', 'Action failed'));
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), POST_TIMEOUT_MS);
+    try {
+      const r = await fetch(api('/api/control'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pointer', value }), signal: abort.signal
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || t('common.actionFailed', 'Action failed'));
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async function pump() {
@@ -735,7 +744,7 @@ function updateDpadMobileDefault() {
       await post(value);
     } catch (e) {
       dx = dy = scrollPx = 0; clickWanted = false;
-      showErr(e.message);
+      if (e.name !== 'AbortError') showErr(e.message);
     }
     sending = false;
     pump();
@@ -781,12 +790,33 @@ function updateDpadMobileDefault() {
   pad.addEventListener('pointerup', e => end(e, true));
   pad.addEventListener('pointercancel', e => end(e, false));
 
-  // For a mouse, which has no two-finger swipe: three notches a press.
-  const SCROLL_BUTTON_NOTCHES = 3;
-  function scrollButton(id, sign) {
-    const b = q(id);
-    if (b) b.addEventListener('click', () => { scrollPx += sign * SCROLL_BUTTON_NOTCHES * SCROLL_PX; pump(); });
+  // The strip over the pad's right edge, as in LG's ThinQ app: dragged up, it
+  // scrolls up. Works for a mouse too, which has no two-finger swipe.
+  const strip = q('tp-scroll');
+  if (strip) {
+    let lastY = null;
+    strip.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      try { strip.setPointerCapture(e.pointerId); } catch (err) {}
+      lastY = e.clientY;
+      strip.classList.add('down');
+    });
+    strip.addEventListener('pointermove', e => {
+      if (lastY === null) return;
+      scrollPx -= e.clientY - lastY;
+      lastY = e.clientY;
+      pump();
+    });
+    const release = () => { lastY = null; strip.classList.remove('down'); };
+    strip.addEventListener('pointerup', release);
+    strip.addEventListener('pointercancel', release);
+    // From the keyboard: three notches a press.
+    strip.addEventListener('keydown', e => {
+      const sign = e.key === 'ArrowUp' ? 1 : e.key === 'ArrowDown' ? -1 : 0;
+      if (!sign) return;
+      e.preventDefault();
+      scrollPx += sign * 3 * SCROLL_PX;
+      pump();
+    });
   }
-  scrollButton('tp-scroll-up', 1);
-  scrollButton('tp-scroll-down', -1);
 })();

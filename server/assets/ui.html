@@ -329,12 +329,11 @@
     <div class="set" data-col="0"><div class="lbl" data-t="ctl.touchpad">Touchpad</div>
       <div class="touchpad-row" id="touchpad-row">
         <div class="touchpad" id="touchpad" role="application" aria-label="Touchpad" data-t-aria-label="ctl.touchpad"></div>
-        <div class="touchpad-scroll">
-          <button type="button" id="tp-scroll-up" title="Scroll up" aria-label="Scroll up" data-t-title="ctl.scrollUp" data-t-aria-label="ctl.scrollUp">&#9650;</button>
-          <button type="button" id="tp-scroll-down" title="Scroll down" aria-label="Scroll down" data-t-title="ctl.scrollDown" data-t-aria-label="ctl.scrollDown">&#9660;</button>
-        </div>
+        <!-- Over the pad's right edge, as in LG's ThinQ app: dragged up, it scrolls up. -->
+        <div class="tp-scroll" id="tp-scroll" role="scrollbar" aria-orientation="vertical" aria-controls="touchpad" aria-valuenow="50" tabindex="0"
+          title="Scroll" aria-label="Scroll" data-t-title="ctl.scroll" data-t-aria-label="ctl.scroll"></div>
       </div>
-      <p class="sub" data-t="ctl.touchpad.help">Drag to move the pointer, tap to click. Swipe with two fingers or use the arrows to scroll.</p>
+      <p class="sub" data-t="ctl.touchpad.help">Drag to move the pointer, tap to click. Drag the strip at the right edge, or swipe with two fingers, to scroll.</p>
     </div>
 
     <!-- Pinned to the first column: it is the one control here that people

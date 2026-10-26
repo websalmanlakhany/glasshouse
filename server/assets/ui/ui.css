@@ -619,10 +619,13 @@ button.key-hit{background:var(--w10)}
 .touchpad{height:220px;border:1px solid var(--w12);border-radius:14px;background:var(--w06);
           touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
 .touchpad.down{background:var(--w10)}
-.touchpad-row{display:flex;gap:8px}
+.touchpad-row{display:flex;position:relative}
 .touchpad-row .touchpad{flex:1;min-width:0}
-.touchpad-scroll{display:flex;flex-direction:column;gap:8px;width:56px}
-.touchpad-scroll button{flex:1;min-height:0;padding:0;font-size:15px;letter-spacing:0}
+.tp-scroll{position:absolute;top:10px;bottom:10px;right:10px;width:26px;border-radius:13px;
+           background:var(--w10);border:1px solid var(--w12);touch-action:none;cursor:ns-resize}
+.tp-scroll::before{content:'';position:absolute;left:50%;top:50%;width:2px;height:28px;margin:-14px 0 0 -1px;
+                   border-radius:1px;background:var(--w40)}
+.tp-scroll.down{background:var(--w25)}
 
 /* ---- the Remote tab ----
    The whole screen, nothing to scroll: the keys that open a sheet along the

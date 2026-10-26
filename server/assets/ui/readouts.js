@@ -693,9 +693,6 @@ async function tick() {
       const soLeased = getLease('soundOutput', soRaw);
       const curSo = soLeased !== undefined ? soLeased : soRaw;
       if (q('soundout-lbl') && !soLeased) q('soundout-lbl').textContent = (d.sound.output || d.sound.output_raw || '').toUpperCase();
-      // Bluetooth only with an audio device connected: without one the TV
-      // opens its own pairing prompt and falls back to the speakers.
-      const noBt = d.sound.bt_audio === false;
       // Once the TV has said which outputs it offers, a button shows only if
       // it is one of them, and the rest go in More.
       const offered = Array.isArray(d.sound.outputs) ? d.sound.outputs : null;
@@ -705,7 +702,9 @@ async function tick() {
         if (!b.id.startsWith('so_')) continue;
         const id = b.id.replace('so_', '');
         const isCur = id === curSo;
-        b.hidden = !isCur && ((onButtons && !onButtons.has(id)) || (id === 'bt_soundbar' && noBt));
+        // Bluetooth always: with no audio device connected, choosing it opens
+        // the TV's own pairing prompt, which is the way to connect one.
+        b.hidden = !isCur && id !== 'bt_soundbar' && !!onButtons && !onButtons.has(id);
         b.classList.toggle('on', isCur);
         if (isCur && soLeased && q('soundout-lbl')) q('soundout-lbl').textContent = b.textContent.toUpperCase();
       }
