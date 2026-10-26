@@ -162,7 +162,9 @@
   }
 
   function isExcluded(el) {
-    return !el || el.hidden || el.closest('#global-search') || el.closest('#catalog-box') || el.closest('#apps-installed-list');
+    return !el || el.hidden || el.closest('#global-search') || el.closest('#catalog-box') || el.closest('#apps-installed-list') ||
+      // Its keys only open the Control tab's own controls, which are indexed there.
+      el.closest('.rmt-keys, .rmt-seg');
   }
 
   function tabAvailable(tab) {

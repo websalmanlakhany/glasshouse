@@ -34,7 +34,11 @@ function openRemoteSheet(key) {
   closeRemoteSheet();
   rmtSheet = key;
   q('rmt-sheet-title').textContent = sheet.title();
-  sheet.ids.forEach(id => remoteBorrow(q(id), body));
+  // Not what the Control tab hides: power, where config.json switches it off.
+  sheet.ids.forEach(id => {
+    const el = q(id);
+    if (el && !el.parentElement.closest('[hidden]:not(.panel)')) remoteBorrow(el, body);
+  });
   box.hidden = false;
   document.querySelectorAll('#remotepane [data-sheet]').forEach(b =>
     b.classList.toggle('on', b.dataset.sheet === key));

@@ -542,6 +542,8 @@ async function tick() {
         q('vol-steps').hidden = !steps;
         q('vol-steps').querySelectorAll('button').forEach(b => { b.disabled = settling; });
       }
+      // The Remote tab's - and + are always shown, so they go by the same rule as mute.
+      document.querySelectorAll('.rmt-vol>button').forEach(b => { b.disabled = ctl === 'none' || settling; });
       if (q('vol-wrap')) {
         q('vol-wrap').hidden = ctl === 'steps';
         q('vol-wrap').classList.toggle('off', ctl === 'none' || settling);

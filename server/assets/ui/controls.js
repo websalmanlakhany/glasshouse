@@ -366,7 +366,7 @@ function holdVolumeControls() {
   if (q('vol-slider')) q('vol-slider').disabled = true;
   if (q('vol-wrap')) q('vol-wrap').classList.add('off');
   if (q('mute')) q('mute').disabled = true;
-  if (q('vol-steps')) q('vol-steps').querySelectorAll('button').forEach(b => { b.disabled = true; });
+  document.querySelectorAll('#vol-steps button, .rmt-vol>button').forEach(b => { b.disabled = true; });
 }
 
 function setVolFromPointer(e) {
