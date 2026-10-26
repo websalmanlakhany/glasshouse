@@ -99,6 +99,8 @@ var historyModule = null;
 var backupModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
+/** @type {typeof import('./idleoff')} */
+var idleOffModule = null;
 var republishDiscoveryFn = null;
 var tvAppFn = null;
 var restartSelfFn = null;
@@ -679,6 +681,18 @@ function doControl(action, value, cb) {
     case 'powerTimer':
       return timers.set(luna, value, cb);
 
+    // Minutes without a button press before the TV switches off; 0 for never.
+    case 'idleOff':
+      if (!writeSettingsFn || !idleOffModule) return cb({ ok: false, error: 'no idle switch-off configured' });
+      var idleMinutes = toInt(value, -1);
+      if (idleOffModule.CHOICES.indexOf(idleMinutes) === -1) return cb({ ok: false, error: 'idleOff must be one of ' + idleOffModule.CHOICES.join(', ') });
+      return writeSettingsFn({ idleOff: { minutes: idleMinutes } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        idleOffModule.apply(idleMinutes);
+        telemetry.clearCache();
+        cb({ ok: true });
+      });
+
     // One of lgsettings.js's rows: { id, on } for a switch, { id, value } otherwise.
     case 'lgSetting':
       if (!value || typeof value.id !== 'string') return cb({ ok: false, error: 'lgSetting needs an id' });
@@ -1094,6 +1108,7 @@ function init(opts) {
   if (opts.devtools) devtoolsModule = opts.devtools;
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;
+  if (opts.idleOff) idleOffModule = opts.idleOff;
   if (opts.backup) backupModule = opts.backup;
   homeModule = opts.home || null;
   if (opts.republishDiscovery) republishDiscoveryFn = opts.republishDiscovery;

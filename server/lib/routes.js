@@ -105,6 +105,8 @@ var sshKeysModule = null;
 var screentimeModule = null;
 /** @type {typeof import('./backup')} */
 var backupModule = null;
+/** @type {typeof import('./idleoff')} */
+var idleOffModule = null;
 var fromHbcFn = null;
 var tileHidingOffMsg = '';
 var assetPathFn = null;
@@ -1915,6 +1917,8 @@ function handleRequest(req, res) {
       if (!j || typeof j !== 'object') {
         return send(res, 400, JSON.stringify({ ok: false, error: 'malformed JSON' }));
       }
+      // A command from the dashboard is a button pressed, as the remote's are.
+      if (idleOffModule) idleOffModule.activity();
       doControl(j.action, j.value, function (r) { send(res, 200, JSON.stringify(r)); });
     });
     return;
@@ -1956,6 +1960,7 @@ function init(opts) {
   if (opts.sshKeys) sshKeysModule = opts.sshKeys;
   if (opts.screentime) screentimeModule = opts.screentime;
   if (opts.backup) backupModule = opts.backup;
+  if (opts.idleOff) idleOffModule = opts.idleOff;
   if (opts.fromHomebrewChannel) fromHbcFn = opts.fromHomebrewChannel;
   if (opts.tileHidingOff) tileHidingOffMsg = opts.tileHidingOff;
   if (opts.assetPath) assetPathFn = opts.assetPath;

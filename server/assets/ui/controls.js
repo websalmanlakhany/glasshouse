@@ -141,6 +141,8 @@ function applyOptimistic(action, value) {
       setLease('powerTimer.' + value.timer, powerTimerKey(Object.assign({}, cur, value)));
       powerTimerRows(lastPowerTimers);
     }
+  } else if (action === 'idleOff') {
+    setLease('idleOff', value);
   } else if (action === 'wakeOnLan') {
     const on = value === 'on' || value === true;
     setLease('wakeOnLan', on);
@@ -248,10 +250,19 @@ function powerTimerRows(timers) {
     if (days) for (const b of days.children) b.classList.toggle('on', tm.days.indexOf(Number(b.dataset.day)) !== -1);
   });
   if (q('adv-timers')) {
-    q('adv-timers').hidden = !shownPowerTimer('on') && !shownPowerTimer('off');
+    q('adv-timers').hidden = !shownPowerTimer('on') && !shownPowerTimer('off') && !(q('row-idleoff') && !q('row-idleoff').hidden);
   }
   const note = q('ontimer-autooff');
   if (note) note.hidden = !(timers && timers.on && timers.on.autoOff);
+}
+// Glasshouse's own switch-off after no button is pressed, beside LG's timers.
+function idleOffRow(idle) {
+  const row = q('row-idleoff'), sel = q('sel_idleoff');
+  if (!row || !sel) return;
+  row.hidden = !(idle && idle.available);
+  if (row.hidden) return;
+  const leased = getLease('idleOff', idle.minutes);
+  if (document.activeElement !== sel) sel.value = String(leased !== undefined ? leased : idle.minutes);
 }
 function setPowerTimer(which, patch) {
   if (patch.time === '') return;
