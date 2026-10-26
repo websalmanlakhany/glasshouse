@@ -1924,7 +1924,7 @@ function handleRequest(req, res) {
         return send(res, 400, JSON.stringify({ ok: false, error: 'malformed JSON' }));
       }
       // A command from the dashboard is a button pressed, as the remote's are.
-      if (idleOffModule) idleOffModule.activity();
+      if (idleOffModule) idleOffModule.activity('dashboard: ' + j.action);
       doControl(j.action, j.value, function (r) { send(res, 200, JSON.stringify(r)); });
     });
     return;

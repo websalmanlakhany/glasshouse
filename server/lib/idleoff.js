@@ -11,7 +11,8 @@
  * Strict ES5 for Node 0.12.2 on webOS 4.
  */
 
-var CHOICES = [0, 30, 60, 120, 180];
+// 1 minute is for trying it out.
+var CHOICES = [0, 1, 30, 60, 120, 180];
 var CHECK_MS = 30000;
 var GRACE_MS = 120000;
 var WARNING = 'Nothing has been pressed for a while. The TV switches off in 2 minutes. Press any button to keep it on.';
@@ -60,6 +61,9 @@ function warn() {
     cancel: later(function () {
       if (pending !== mine) return;
       pending = null;
+      // The TV reports itself off a second or so later; until then a check
+      // would warn again.
+      lastActivity = now();
       console.log('idleoff: no button pressed, switching off');
       control('powerOff', null, function (r) {
         if (!r || !r.ok) console.error('idleoff: power off failed: ' + ((r && r.error) || 'no answer'));
@@ -83,8 +87,13 @@ function warn() {
   }, sourceId);
 }
 
-// A button pressed, on the remote or in Glasshouse.
-function activity() {
+/*
+ * A button pressed, on the remote or in Glasshouse. What restarts the count
+ * after a minute or more without one is logged, so a switch-off that comes
+ * late can be traced.
+ */
+function activity(source) {
+  if (minutes() && now() - lastActivity >= 60000) console.log('idleoff: count restarted by ' + source);
   lastActivity = now();
   closeWarning();
 }

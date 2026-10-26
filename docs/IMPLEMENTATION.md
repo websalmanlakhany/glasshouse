@@ -1046,8 +1046,8 @@ showing, Back dismisses it first and the screen goes off 1.5 seconds later.
 
 ## Switch off when idle
 
-`server/lib/idleoff.js` switches the TV off after `idleOff.minutes` (30, 60,
-120 or 180) without a button press, as LG's own no-activity setting goes no
+`server/lib/idleoff.js` switches the TV off after `idleOff.minutes` (1, 30,
+60, 120 or 180) without a button press, as LG's own no-activity setting goes no
 lower than 3 hours. A press is any key the remote-buttons worker reads from
 `/dev/input`, kept running for this while a time is set, or a command through
 `/api/control` or MQTT. It checks every 30 seconds while the TV is on, and

@@ -55,11 +55,14 @@ s.advance(30000);
 assert.strictEqual(s.lunaCalls.length, 1, 'warned once');
 s.elapse();
 assert.deepEqual(s.calls, ['powerOff']);
+// Still reported on just after: no second warning.
+s.advance(30000);
+assert.strictEqual(s.lunaCalls.length, 1, 'no warning while the TV switches off');
 
 // A press during the warning closes it and keeps the TV on.
 s = setup(60);
 s.advance(60 * 60000);
-idleoff.activity();
+idleoff.activity('test');
 assert.deepEqual(s.lunaCalls, ['com.webos.notification/createAlert', 'com.webos.notification/closeAlert']);
 s.elapse();
 assert.deepEqual(s.calls, []);
@@ -69,7 +72,7 @@ assert.strictEqual(s.lunaCalls.length, 2, 'the hour starts again from the press'
 // A press part way through starts the hour again.
 s = setup(60);
 s.advance(40 * 60000);
-idleoff.activity();
+idleoff.activity('test');
 s.advance(40 * 60000);
 assert.deepEqual(s.lunaCalls, []);
 
@@ -89,6 +92,8 @@ assert.deepEqual(s.lunaCalls, []);
 assert.deepEqual(idleoff.status(), { minutes: 0, available: true });
 
 // A time chosen takes effect at once, and a time not offered counts as off.
+idleoff.apply(1);
+assert.strictEqual(idleoff.minutes(), 1);
 idleoff.apply(30);
 assert.strictEqual(idleoff.minutes(), 30);
 s.config.idleOff.minutes = 45;

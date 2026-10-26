@@ -313,7 +313,7 @@ var CONFIG = {
   },
 
   // Minutes without a button press before the TV switches off, after a
-  // warning: 0 (never), 30, 60, 120 or 180.
+  // warning: 0 (never), 1 (for trying it out), 30, 60, 120 or 180.
   idleOff: {
     minutes: 0
   },
@@ -626,9 +626,9 @@ remotebuttons.init({
   onHomeKey: function (down) {
     if (glasshouseHome) glasshouseHome.homeKey(down);
   },
-  onAnyKey: function () {
+  onAnyKey: function (code) {
     screensavers.keyPressed();
-    idleoff.activity();
+    idleoff.activity('key ' + code);
   }
 });
 
@@ -666,7 +666,7 @@ controls.init({
 
 // Home Assistant's commands, each a button pressed for idleoff.js.
 function doControl(action, value, cb) {
-  idleoff.activity();
+  idleoff.activity('Home Assistant: ' + action);
   return controls.doControl(action, value, cb);
 }
 
