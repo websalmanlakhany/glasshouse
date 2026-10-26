@@ -7,6 +7,7 @@
  */
 const TABS = {
   control:     'tab-control',
+  remote:      'remotepane',
   metrics:     'tab-metrics',
   apps:        'appspane',
   home:        'homepane',
@@ -23,7 +24,7 @@ const TABS = {
 // Each tab's page on the docs site, for Help.
 const DOCS = 'https://rorygallagher2024.github.io/glasshouse/';
 const TAB_DOCS = {
-  control: 'dashboard/control/', metrics: 'dashboard/metrics/', apps: 'dashboard/apps/', home: 'dashboard/home/',
+  control: 'dashboard/control/', remote: 'dashboard/remote/', metrics: 'dashboard/metrics/', apps: 'dashboard/apps/', home: 'dashboard/home/',
   oledcare: 'dashboard/oled-care/', game: 'dashboard/game/', servicemenu: 'dashboard/service-menu/',
   screensaver: 'dashboard/screen-savers/', privacy: 'dashboard/privacy/', advanced: 'dashboard/advanced/',
   mqtt: 'HOME-ASSISTANT/', server: 'dashboard/server/', tools: 'dashboard/tools/'
@@ -81,6 +82,8 @@ function showTab(name) {
   if (help) help.href = DOCS + (TAB_DOCS[name] || 'dashboard/');
   closeNav();
   try { localStorage.setItem('tab', name); } catch (e) { /* private window */ }
+  // The Remote tab shows the Control tab's own controls, so they move with it.
+  remoteSlots(name === 'remote');
   relayout(false);   // the panel just became measurable
   cfgPollStatus(name === 'mqtt');
   if (name === 'metrics') loadHdmiOnce();

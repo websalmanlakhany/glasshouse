@@ -596,10 +596,10 @@ const KEYBOARD_REMOTE = {
 };
 let keyboardRemoteAt = 0;
 document.addEventListener('keydown', e => {
-  if (activeTab !== 'control' || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey) return;
+  if ((activeTab !== 'control' && activeTab !== 'remote') || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey) return;
   const el = e.target;
   if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
-  if (document.querySelector('.modal-backdrop:not([hidden])') || document.body.classList.contains('nav-open')) return;
+  if (document.querySelector('.modal-backdrop:not([hidden]), .rmt-sheet:not([hidden])') || document.body.classList.contains('nav-open')) return;
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   const rcu = KEYBOARD_REMOTE[key];
   if (!rcu && key !== ' ' && key !== 'k') return;
@@ -622,35 +622,37 @@ document.addEventListener('keydown', e => {
 });
 
 /*
- * Volume - and +: held, they repeat as the remote's keys do. A step waits for
- * the one before it, so a slow TV never has a queue of them to work through
- * after the button is let go. Enter or Space on a focused button steps once.
+ * Volume - and +, and the D-pad's arrows: held, they repeat as the remote's own
+ * keys do. A step waits for the one before it, so a slow TV never has a queue
+ * of them to work through after the button is let go. Enter or Space on a
+ * focused button steps once.
  */
-(function initVolumeSteps() {
-  const box = q('vol-steps');
-  if (!box) return;
+(function initHeldKeys() {
   const REPEAT_DELAY_MS = 400, REPEAT_GAP_MS = 120;
   let held = 0;
-  async function repeat(step, id) {
-    await sendCommand('volumeStep', step);
-    if (held !== id) return;
-    setTimeout(() => { if (held === id) repeat(step, id); }, REPEAT_GAP_MS);
-  }
-  function release() { held = 0; }
-  box.querySelectorAll('button[data-vol-step]').forEach(b => {
-    const step = parseInt(b.dataset.volStep, 10);
-    b.addEventListener('pointerdown', e => {
-      if ((e.pointerType === 'mouse' && e.button !== 0) || b.disabled) return;
+  function bind(btn, send) {
+    async function repeat(id) {
+      await send();
+      if (held !== id) return;
+      setTimeout(() => { if (held === id) repeat(id); }, REPEAT_GAP_MS);
+    }
+    btn.addEventListener('pointerdown', e => {
+      if ((e.pointerType === 'mouse' && e.button !== 0) || btn.disabled) return;
       e.preventDefault();
       const id = held = Date.now();
-      sendCommand('volumeStep', step);
-      setTimeout(() => { if (held === id) repeat(step, id); }, REPEAT_DELAY_MS);
+      send();
+      setTimeout(() => { if (held === id) repeat(id); }, REPEAT_DELAY_MS);
     });
-    b.addEventListener('click', e => { if (e.detail === 0) sendCommand('volumeStep', step); });
-    b.addEventListener('contextmenu', e => e.preventDefault());
-  });
+    btn.addEventListener('click', e => { if (e.detail === 0) send(); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  document.querySelectorAll('button[data-vol-step]').forEach(b =>
+    bind(b, () => sendCommand('volumeStep', parseInt(b.dataset.volStep, 10))));
+  document.querySelectorAll('button[data-hold][data-rcu]').forEach(b =>
+    bind(b, () => sendCommand('rcu', b.dataset.rcu)));
   // On the window: a button disabled mid-hold gets no pointerup of its own.
-  ['pointerup', 'pointercancel', 'blur'].forEach(ev => window.addEventListener(ev, release));
+  ['pointerup', 'pointercancel', 'blur'].forEach(ev =>
+    window.addEventListener(ev, () => { held = 0; }));
 })();
 
 // D-pad disclosure: uncollapse by default on mobile so the TV remote is immediately accessible.

@@ -1,4 +1,6 @@
 {
+ "rmt.close": {"text": "Cerrar", "from": "Close"},
+ "rmt.pad": {"text": "Pad", "from": "Pad"},
  "search.clear": {"text": "Borrar búsqueda", "from": "Clear search"},
  "search.category": {"text": "Categoría: {category}", "from": "Category: {category}"},
  "search.count": {"text": "{n} resultados", "from": "{n} results"},
@@ -5213,6 +5215,10 @@
  "tab.server": {
   "text": "Servidor",
   "from": "Server"
+ },
+ "tab.remote": {
+  "text": "Mando",
+  "from": "Remote"
  },
  "tab.serviceMenu": {
   "text": "Menú de servicio",

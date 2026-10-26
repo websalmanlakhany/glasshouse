@@ -6,10 +6,10 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 
 ![The D-pad opened: arrows around OK, with Back and Home below](../screenshots/control-dpad.png)
 
-* **D-pad navigation:** Directional arrows (Up, Down, Left, Right), OK/Select, Back, Home and Settings (LG's quick settings) to navigate webOS menus and built-in interfaces.
+* **D-pad navigation:** Directional arrows (Up, Down, Left, Right), OK/Select, Back, Home and Settings (LG's quick settings) to navigate webOS menus and built-in interfaces. The arrows repeat while held, as the remote's keys do.
 * **Touchpad:** dragging a finger across the pad moves the TV's pointer, as LG's ThinQ app does, and a tap clicks. A two-finger swipe up or down, or the arrow buttons beside the pad, scroll. The server writes the moves to the TV's own mouse input device (`ClickableMouse`) and the scroll to the Magic Remote's.
 * **Open a web page:** below Back, Home and Settings in the D-pad, enter any HTTP or HTTPS URL to launch it immediately in the TV's native web browser.
-* **Keyboard:** while the Control tab is open, a computer's keyboard works as the remote: the arrow keys, Enter for OK, Esc or Backspace for Back, H for Home, M for Settings, Space for play or pause and K for mute. Keys typed into a field, or pressed with Ctrl, Alt or Cmd, are left to the page.
+* **Keyboard:** while the Control or Remote tab is open, a computer's keyboard works as the remote: the arrow keys, Enter for OK, Esc or Backspace for Back, H for Home, M for Settings, Space for play or pause and K for mute. Keys typed into a field, or pressed with Ctrl, Alt or Cmd, are left to the page.
 * **Media playback:** Dedicated transport controls (Play, Pause, Stop, Rewind, Fast Forward) for active media players.
 * **Volume and mute:** Volume slider, step buttons (`+` and `-`) that repeat while held as the remote's keys do, and a one-click mute toggle.
 * **Source selection:** One-click switching across active TV inputs, including HDMI ports and Live TV, with an active indicator marking the current display source.
