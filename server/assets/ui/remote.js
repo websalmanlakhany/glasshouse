@@ -80,8 +80,16 @@ function showRemotePad(which) {
   });
 }
 
-/* The tab fills the screen: it takes whatever height is left once the masthead,
-   the menu bar and the footer have had theirs. */
+/*
+ * The tab fills the screen: it takes whatever height is left once the masthead,
+ * the menu bar and the footer have had theirs.
+ *
+ * In the Android app it is a pixel taller and kept scrolled by that pixel. The
+ * app reloads the page on a pull down from the very top, and with nothing to
+ * scroll the page is always there, so every downward drag on the touchpad
+ * became a pull and the pointer stopped.
+ */
+const RMT_APP_NUDGE = /Glasshouse-Android\//.test(navigator.userAgent) ? 1 : 0;
 function sizeRemote() {
   const panel = q('remotepane');
   if (!panel || panel.hidden) return;
@@ -89,7 +97,8 @@ function sizeRemote() {
   const box = panel.getBoundingClientRect();
   // The page's own height is no help: it never reports less than the screen.
   const below = document.body.getBoundingClientRect().bottom - box.bottom;
-  panel.style.height = Math.max(420, window.innerHeight - box.top - below) + 'px';
+  panel.style.height = Math.max(420, window.innerHeight - box.top - below) + RMT_APP_NUDGE + 'px';
+  if (RMT_APP_NUDGE && window.scrollY < RMT_APP_NUDGE) window.scrollTo(0, RMT_APP_NUDGE);
 }
 
 // Called by showTab: the borrowed controls go back to the Control tab on leaving.
@@ -162,4 +171,9 @@ async function sendKeyboard() {
   q('kb-form').addEventListener('submit', e => { e.preventDefault(); sendKeyboard(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRemoteSheet(); });
   window.addEventListener('resize', sizeRemote);
+  if (RMT_APP_NUDGE) {
+    window.addEventListener('scroll', () => {
+      if (activeTab === 'remote' && window.scrollY < RMT_APP_NUDGE) window.scrollTo(0, RMT_APP_NUDGE);
+    }, { passive: true });
+  }
 })();

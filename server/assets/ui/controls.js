@@ -764,7 +764,15 @@ function updateDpadMobileDefault() {
   });
   pad.addEventListener('pointermove', e => {
     const last = touches.get(e.pointerId);
-    if (!last) return;
+    if (!last) {
+      // A mouse moves the pointer just by passing over the pad, and a click clicks.
+      if (e.pointerType === 'mouse') {
+        dx += e.movementX * SPEED;
+        dy += e.movementY * SPEED;
+        pump();
+      }
+      return;
+    }
     const mx = e.clientX - last.x, my = e.clientY - last.y;
     touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     travel += Math.abs(mx) + Math.abs(my);
@@ -787,6 +795,8 @@ function updateDpadMobileDefault() {
       pump();
     }
   }
+  // touch-action stops the page, but not the Android app around it, panning.
+  pad.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
   pad.addEventListener('pointerup', e => end(e, true));
   pad.addEventListener('pointercancel', e => end(e, false));
 
@@ -808,6 +818,7 @@ function updateDpadMobileDefault() {
       pump();
     });
     const release = () => { lastY = null; strip.classList.remove('down'); };
+    strip.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
     strip.addEventListener('pointerup', release);
     strip.addEventListener('pointercancel', release);
     // From the keyboard: three notches a press.
