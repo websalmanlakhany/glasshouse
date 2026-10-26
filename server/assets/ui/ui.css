@@ -463,6 +463,8 @@ html.nav-hidden body.nav-open{overflow:hidden}
 /* With the slider too, - and + go on a row of their own beneath it. */
 .vol-row.both #mute{grid-row:1;grid-column:3}
 .vol-steps button{min-height:48px;font-size:22px;font-weight:300;line-height:1}
+/* Held to repeat: no text selection or callout menu on a long press. */
+.vol-steps button{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
 #picmodes,#energysteps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}
 #picmodes:empty{display:none;margin:0}
 #picmodes button,#energysteps button{
@@ -611,7 +613,16 @@ button.pill.busy:not([style*="--p"]){
 /* A remote key pressed on the keyboard, shown as if clicked. */
 button.key-hit{background:var(--w10)}
 .dpad-keys{margin-top:12px}
+.dpad-url{margin-top:18px}
 @media (pointer:coarse){.dpad-keys{display:none}}
+/* touch-action:none keeps a drag from scrolling the page instead. */
+.touchpad{height:220px;border:1px solid var(--w12);border-radius:14px;background:var(--w06);
+          touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.touchpad.down{background:var(--w10)}
+.touchpad-row{display:flex;gap:8px}
+.touchpad-row .touchpad{flex:1;min-width:0}
+.touchpad-scroll{display:flex;flex-direction:column;gap:8px;width:56px}
+.touchpad-scroll button{flex:1;min-height:0;padding:0;font-size:15px;letter-spacing:0}
 .oled-row{display:flex;gap:20px;justify-content:space-between;align-items:flex-start;
           padding:18px 0;border-bottom:1px solid var(--w12)}
 .oled-row:last-child{border-bottom:0}
