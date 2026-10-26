@@ -1266,9 +1266,9 @@
   "text": "Herramientas remotas y utilidades",
   "from": "Remote tools & utilities"
  },
- "ctl.remoteTools.sub": {
-  "text": "Notificación y página web",
-  "from": "Notification and web page"
+ "ctl.remoteTools.subToast": {
+  "text": "Notificación en pantalla",
+  "from": "Screen notification"
  },
  "ctl.rewind": {
   "text": "Rebobinar",

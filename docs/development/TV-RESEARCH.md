@@ -642,6 +642,14 @@ app in front. Remote Keys puts its own filter first.
   `com.webos.service.networkinput/test/sendKeyCode` with a Linux key code (the
   `IR_KEY_*` value in `/usr/share/X11/xkb/keycodes/lg` less 8: Blue 401, TV 377)
   reached a mapped key's filter like the remote's own press.
+- **The pointer moves through `ClickableMouse`.** On a G4 (webOS 9)
+  `networkinput/getPointerInputSocket` over luna answers with
+  `/tmp/netinput.pointer.sock`, which closes at once on a bare connection,
+  plain text or a WebSocket handshake alike. Relative moves written to the
+  `ClickableMouse` event device show and move the pointer; the same written to
+  `LGE Network Input` do nothing. `ClickableMouse` has no wheel (`REL=3`);
+  `REL_WHEEL` written to `LGE M-RCU - Builtin [0]` scrolls what the pointer
+  is on.
 - **A filter can send keys over the network.** On a C3 (webOS 10.2.2) the
   filter's own `lunaCall.send` to `networkinput/test/sendKeyCode` with play
   207, pause 119, stop 128, rewind 168, fast forward 208, volume up 115, volume
@@ -1108,8 +1116,11 @@ Measured on 19 October 2026 on an OLED55G36LA.
   `apiadapter/audio/setMute { mute }` mutes it and shows LG's mute icon.
   Switching on from standby, or a reboot, clears the mute.
 - With sound through an ARC soundbar (`external_arc`),
-  `com.webos.audio/setVolume` left the volume as it was. Not looked into
-  further.
+  `com.webos.audio/setVolume` left the volume as it was. The same on a G4
+  (webOS 9), where the remote's volume keys sent through
+  `networkinput/test/sendKeyCode` do step the soundbar over CEC. Stepping the
+  slider's level with them, reading the level back between runs, still
+  stopped short of 0 to 50.
 - `com.webos.service.networkinput/controls/pause` paused a playing video in
   YouTube, Netflix, Apple TV and Peacock. Paramount+ only shows its player bar
   on the first one and pauses on the second. On YouTube's browse screen it

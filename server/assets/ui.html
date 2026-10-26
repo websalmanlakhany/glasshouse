@@ -282,9 +282,14 @@
   <div class="col-controls">
     <div class="col-sec" data-t="tab.control">Control</div>
 
-    <!-- Panel first: it is the control the remote cannot do easily, and the
-         reason a lot of people install this at all. -->
-    <div class="set" style="margin-top:0"><div class="lbl" data-t="ctl.panel">Panel</div>
+    <div class="set" id="pwset" style="margin-top:0"><div class="lbl" data-t="adv.power">Power</div>
+      <div class="btns">
+        <button id="poff" onclick="powerAction(pwStandby ? 'powerOn' : 'powerOff')">&mdash;</button>
+        <button id="prb" onclick="powerAction('reboot')" data-t="ctl.reboot">Reboot</button>
+      </div>
+    </div>
+
+    <div class="set"><div class="lbl" data-t="ctl.panel">Panel</div>
       <div class="btns">
         <button id="btn-screenoff" onclick="sendCommand('screenOff')" data-t="ctl.screenOff">Screen off</button>
         <button id="btn-screenon" onclick="sendCommand('screenOn')" data-t="ctl.screenOn">Screen on</button>
@@ -303,8 +308,8 @@
           <input type="range" id="vol-slider" min="0" max="100" value="0" aria-label="Volume" data-t-aria-label="ctl.volume">
         </div>
         <div class="vol-steps" id="vol-steps" hidden>
-          <button onclick="sendCommand('volumeStep',-1)" aria-label="Volume down" data-t-aria-label="ctl.volumeDown" translate="no">&minus;</button>
-          <button onclick="sendCommand('volumeStep',1)" aria-label="Volume up" data-t-aria-label="ctl.volumeUp" translate="no">+</button>
+          <button type="button" data-vol-step="-1" aria-label="Volume down" data-t-aria-label="ctl.volumeDown" translate="no">&minus;</button>
+          <button type="button" data-vol-step="1" aria-label="Volume up" data-t-aria-label="ctl.volumeUp" translate="no">+</button>
         </div>
         <button id="mute" onclick="toggleMute()" data-t="ctl.mute">Mute</button>
       </div>
@@ -317,6 +322,18 @@
         <button onclick="sendCommand('media','stop')" data-t="ctl.stop">Stop</button>
         <button onclick="sendCommand('media','fastForward')" data-t="ctl.fastForward">Fast Fwd</button>
       </div>
+    </div>
+
+    <!-- Always open, above the D-pad: it is used in place of the remote. -->
+    <div class="set" data-col="0"><div class="lbl" data-t="ctl.touchpad">Touchpad</div>
+      <div class="touchpad-row">
+        <div class="touchpad" id="touchpad" role="application" aria-label="Touchpad" data-t-aria-label="ctl.touchpad"></div>
+        <div class="touchpad-scroll">
+          <button type="button" id="tp-scroll-up" title="Scroll up" aria-label="Scroll up" data-t-title="ctl.scrollUp" data-t-aria-label="ctl.scrollUp">&#9650;</button>
+          <button type="button" id="tp-scroll-down" title="Scroll down" aria-label="Scroll down" data-t-title="ctl.scrollDown" data-t-aria-label="ctl.scrollDown">&#9660;</button>
+        </div>
+      </div>
+      <p class="sub" data-t="ctl.touchpad.help">Drag to move the pointer, tap to click. Swipe with two fingers or use the arrows to scroll.</p>
     </div>
 
     <!-- Pinned to the first column: it is the one control here that people
@@ -337,7 +354,19 @@
           <button onclick="sendCommand('rcu','home')" data-rcu="home" data-t="ctl.home">Home</button>
           <button onclick="sendCommand('rcu','settings')" data-rcu="settings" data-t="ctl.settings">Settings</button>
         </div>
+        <div class="lbl dpad-url" data-t="ctl.openUrl">Open a web page</div>
+        <form class="toast-form" onsubmit="event.preventDefault();openUrl();">
+          <input type="text" id="url-input" placeholder="https://example.com" translate="no" maxlength="2048" autocomplete="off" spellcheck="false">
+          <button type="submit" id="btn-url" data-t="ctl.openUrl.open">Open</button>
+        </form>
         <p class="sub dpad-keys" data-t="ctl.dpad.keys">On a keyboard: the arrows, Enter for OK, Esc or Backspace for Back, H for Home, M for Settings, Space to play or pause, K to mute.</p>
+      </div>
+    </details>
+
+    <details class="disc" id="disc-apps">
+      <summary><span data-t="tab.apps">Apps</span> <span class="cur" id="currapp-lbl"></span></summary>
+      <div class="set">
+        <div class="app-grid" id="apps"></div>
       </div>
     </details>
 
@@ -407,15 +436,8 @@
       <div class="set" id="sound-format-set" hidden><div class="lbl"><span data-t="ctl.soundFormat">Current sound format</span> &middot; <span id="sound-format" class="num" translate="no">&mdash;</span></div></div>
     </details>
 
-    <details class="disc" id="disc-apps">
-      <summary><span data-t="tab.apps">Apps</span> <span class="cur" id="currapp-lbl"></span></summary>
-      <div class="set">
-        <div class="app-grid" id="apps"></div>
-      </div>
-    </details>
-
     <details class="disc" id="disc-remote-tools">
-      <summary><span data-t="ctl.remoteTools">Remote tools &amp; utilities</span> <span class="cur" data-t="ctl.remoteTools.sub">Notification and web page</span></summary>
+      <summary><span data-t="ctl.remoteTools">Remote tools &amp; utilities</span> <span class="cur" data-t="ctl.remoteTools.subToast">Screen notification</span></summary>
 
       <div class="set"><div class="lbl"><span data-t="ctl.toast">Screen notification</span> <span class="sub" id="toast-count" translate="no" style="float:right;margin:0">0/120</span></div>
         <form class="toast-form" onsubmit="event.preventDefault();sendToast();">
@@ -423,21 +445,7 @@
           <button type="submit" id="btn-toast" data-t="ctl.toast.send">Send</button>
         </form>
       </div>
-
-      <div class="set"><div class="lbl" data-t="ctl.openUrl">Open a web page</div>
-        <form class="toast-form" onsubmit="event.preventDefault();openUrl();">
-          <input type="text" id="url-input" placeholder="https://example.com" translate="no" maxlength="2048" autocomplete="off" spellcheck="false">
-          <button type="submit" id="btn-url" data-t="ctl.openUrl.open">Open</button>
-        </form>
-      </div>
     </details>
-
-    <div class="set" id="pwset"><div class="lbl" data-t="adv.power">Power</div>
-      <div class="btns">
-        <button id="poff" onclick="powerAction(pwStandby ? 'powerOn' : 'powerOff')">&mdash;</button>
-        <button id="prb" onclick="powerAction('reboot')" data-t="ctl.reboot">Reboot</button>
-      </div>
-    </div>
   </div>
 </section>
 

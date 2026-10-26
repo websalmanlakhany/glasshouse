@@ -621,6 +621,38 @@ document.addEventListener('keydown', e => {
   sendCommand('rcu', rcu);
 });
 
+/*
+ * Volume - and +: held, they repeat as the remote's keys do. A step waits for
+ * the one before it, so a slow TV never has a queue of them to work through
+ * after the button is let go. Enter or Space on a focused button steps once.
+ */
+(function initVolumeSteps() {
+  const box = q('vol-steps');
+  if (!box) return;
+  const REPEAT_DELAY_MS = 400, REPEAT_GAP_MS = 120;
+  let held = 0;
+  async function repeat(step, id) {
+    await sendCommand('volumeStep', step);
+    if (held !== id) return;
+    setTimeout(() => { if (held === id) repeat(step, id); }, REPEAT_GAP_MS);
+  }
+  function release() { held = 0; }
+  box.querySelectorAll('button[data-vol-step]').forEach(b => {
+    const step = parseInt(b.dataset.volStep, 10);
+    b.addEventListener('pointerdown', e => {
+      if ((e.pointerType === 'mouse' && e.button !== 0) || b.disabled) return;
+      e.preventDefault();
+      const id = held = Date.now();
+      sendCommand('volumeStep', step);
+      setTimeout(() => { if (held === id) repeat(step, id); }, REPEAT_DELAY_MS);
+    });
+    b.addEventListener('click', e => { if (e.detail === 0) sendCommand('volumeStep', step); });
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  });
+  // On the window: a button disabled mid-hold gets no pointerup of its own.
+  ['pointerup', 'pointercancel', 'blur'].forEach(ev => window.addEventListener(ev, release));
+})();
+
 // D-pad disclosure: uncollapse by default on mobile so the TV remote is immediately accessible.
 function updateDpadMobileDefault() {
   const dpad = q('disc-dpad');
@@ -649,4 +681,110 @@ function updateDpadMobileDefault() {
       try { localStorage.setItem('dpadOpen', dpad.open ? '1' : '0'); } catch (e) {}
     }
   });
+})();
+
+/*
+ * Touchpad: a drag moves the TV's pointer, a tap clicks, a two-finger swipe
+ * scrolls. Movement builds up while a request is out and goes as one step when
+ * it answers, so the TV gets as many as the network carries and no queue
+ * builds behind a slow one.
+ */
+(function initTouchpad() {
+  const pad = q('touchpad');
+  if (!pad) return;
+  // Phone pixels to pointer steps: 1 is sluggish across a 4K screen.
+  const SPEED = 1.5;
+  const TAP_MS = 250, TAP_TRAVEL = 10;
+  // Finger travel per wheel notch.
+  const SCROLL_PX = 30;
+  let dx = 0, dy = 0, scrollPx = 0, clickWanted = false, sending = false;
+  // Fingers on the pad by pointer id, and where each was last.
+  const touches = new Map();
+  let downAt = 0, travel = 0, scrolled = false;
+
+  async function post(value) {
+    const r = await fetch(api('/api/control'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'pointer', value })
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || t('common.actionFailed', 'Action failed'));
+  }
+
+  async function pump() {
+    if (sending) return;
+    const stepX = Math.round(dx), stepY = Math.round(dy);
+    // Fingers moving up scroll the page down, as on a phone.
+    const notches = Math.trunc(scrollPx / SCROLL_PX);
+    let value = null;
+    if (notches) {
+      scrollPx -= notches * SCROLL_PX;
+      value = { type: 'scroll', dy: notches };
+    } else if (stepX || stepY) {
+      dx -= stepX; dy -= stepY;
+      value = { type: 'move', dx: stepX, dy: stepY };
+    } else if (clickWanted) {
+      clickWanted = false;
+      value = { type: 'click' };
+    }
+    if (!value) return;
+    sending = true;
+    try {
+      await post(value);
+    } catch (e) {
+      dx = dy = scrollPx = 0; clickWanted = false;
+      showErr(e.message);
+    }
+    sending = false;
+    pump();
+  }
+
+  pad.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    try { pad.setPointerCapture(e.pointerId); } catch (err) {}
+    if (!touches.size) {
+      downAt = Date.now();
+      travel = 0;
+      scrolled = false;
+    }
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size > 1) scrolled = true;
+    pad.classList.add('down');
+  });
+  pad.addEventListener('pointermove', e => {
+    const last = touches.get(e.pointerId);
+    if (!last) return;
+    const mx = e.clientX - last.x, my = e.clientY - last.y;
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    travel += Math.abs(mx) + Math.abs(my);
+    if (touches.size > 1) {
+      // Each finger adds its share, so two fingers count once between them.
+      scrollPx += my / touches.size;
+    } else if (!scrolled) {
+      dx += mx * SPEED;
+      dy += my * SPEED;
+    }
+    pump();
+  });
+  function end(e, tapped) {
+    if (!touches.delete(e.pointerId)) return;
+    try { pad.releasePointerCapture(e.pointerId); } catch (err) {}
+    if (touches.size) return;
+    pad.classList.remove('down');
+    if (tapped && !scrolled && Date.now() - downAt < TAP_MS && travel < TAP_TRAVEL) {
+      clickWanted = true;
+      pump();
+    }
+  }
+  pad.addEventListener('pointerup', e => end(e, true));
+  pad.addEventListener('pointercancel', e => end(e, false));
+
+  // For a mouse, which has no two-finger swipe: three notches a press.
+  const SCROLL_BUTTON_NOTCHES = 3;
+  function scrollButton(id, sign) {
+    const b = q(id);
+    if (b) b.addEventListener('click', () => { scrollPx += sign * SCROLL_BUTTON_NOTCHES * SCROLL_PX; pump(); });
+  }
+  scrollButton('tp-scroll-up', 1);
+  scrollButton('tp-scroll-down', -1);
 })();
