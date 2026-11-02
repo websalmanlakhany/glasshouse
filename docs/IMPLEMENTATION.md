@@ -536,6 +536,20 @@ The server attempts to launch `com.webos.app.home` first. If that succeeds (webO
 
 The 100ms hold duration between key-down and key-up gives Qt's event loop sufficient time to arm `longPressTimer`, ensuring `global.goHome()` fires on release (`LSM NL_HOME_SHOWN`) and toggles the native Home launcher ribbon on webOS 3–5.
 
+### Held D-pad keys
+
+`sendKeyCode` presses and releases a key in one call, so it cannot hold one.
+The dashboard's arrows and OK go through `keyhold.js` instead, which writes
+the key's down, repeats and up to the `LGE Network Input` event device. The
+dashboard sends `rcuHold` with `down: true` when the finger goes down, renews
+it every 300 ms while it stays, and `down: false` when it lifts, each message
+after the one before. The TV does not repeat a key written there, so the
+server writes a repeat (value 2) every 50 ms after the first 400 ms for an
+arrow; OK gets none, a down held long enough being what apps take as a long
+press. A hold not renewed for a second is released, so a phone that locks or
+drops off the network mid-hold leaves no key down. A TV without the device
+gets one `sendKeyCode` tap per press, as before.
+
 ### Key presses go ahead of telemetry
 
 Remote keys forwarded over MQTT, the arrows, OK, Back and Home, jump the queue

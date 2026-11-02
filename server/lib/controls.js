@@ -10,6 +10,7 @@ var timers = require('./timers');
 var names = require('./names');
 var pointer = require('./pointer');
 var keyboard = require('./keyboard');
+var keyhold = require('./keyhold');
 
 /*
  * Measured on a B8 against the built-in player, watching playStateNow move:
@@ -253,6 +254,14 @@ function doControl(action, value, cb) {
   // skips the cache clearing below.
   if (action === 'pointer') return pointer.send(value, cb);
   if (action === 'type') return keyboard.type(value, cb);
+  // A held D-pad key: on a TV without the device it is written to, a press
+  // is sent as one tap instead.
+  if (action === 'rcuHold') {
+    return keyhold.hold(value, function (r) {
+      if (r.noDevice) return doControl('rcu', value.key, cb);
+      cb(r);
+    });
+  }
 
   var origCb = cb;
   cb = function (r) {
