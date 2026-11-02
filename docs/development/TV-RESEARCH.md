@@ -691,6 +691,13 @@ app in front. Remote Keys puts its own filter first.
   while Search (217) and Settings (139) did. Writing 773 to the remote's own
   input device (`LGE RCU` in `/proc/bus/input/devices`, `event0`) acted like
   the remote's Home.
+- **Keys written to `LGE Network Input` can be held.** On a G4 (webOS 9.2.4)
+  a key-down of OK (28) written to that event device and released 1.5 s later
+  opened Nuvio's long-press menu on a Continue watching title. The device does
+  not repeat a held key: Right held 3 s moved one step, and with repeats
+  (value 2) written every 50 ms after 400 ms it seeked as fast as the remote.
+  The Magic Remote's own presses (an MR24, over Bluetooth) appear on none of
+  the `/dev/input` event devices, only by name in `/var/log/messages`.
 - **configd takes any name and cannot forget one.** `setConfigs` stores a key
   it has never heard of (`glasshouse.remoteKeys`) in
   `/mnt/lg/cmn_data/var/preferences/configd_factory_db.json`, kept across

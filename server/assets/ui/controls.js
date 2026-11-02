@@ -633,10 +633,10 @@ document.addEventListener('keydown', e => {
 });
 
 /*
- * Volume - and +, and the D-pad's arrows: held, they repeat as the remote's own
- * keys do. A step waits for the one before it, so a slow TV never has a queue
- * of them to work through after the button is let go. Enter or Space on a
- * focused button steps once.
+ * Volume - and +: held, they repeat as the remote's own keys do. A step waits
+ * for the one before it, so a slow TV never has a queue of them to work
+ * through after the button is let go. Enter or Space on a focused button
+ * steps once.
  */
 (function initHeldKeys() {
   const REPEAT_DELAY_MS = 400, REPEAT_GAP_MS = 120;
@@ -659,11 +659,50 @@ document.addEventListener('keydown', e => {
   }
   document.querySelectorAll('button[data-vol-step]').forEach(b =>
     bind(b, () => sendCommand('volumeStep', parseInt(b.dataset.volStep, 10))));
-  document.querySelectorAll('button[data-hold][data-rcu]').forEach(b =>
-    bind(b, () => sendCommand('rcu', b.dataset.rcu)));
   // On the window: a button disabled mid-hold gets no pointerup of its own.
   ['pointerup', 'pointercancel', 'blur'].forEach(ev =>
     window.addEventListener(ev, () => { held = 0; }));
+})();
+
+/*
+ * The D-pad's arrows and OK: pressed on the TV while the finger is down and
+ * let go when it lifts, so a held OK is a long press and a held arrow repeats,
+ * as on the remote. The server repeats the arrows itself. While held, the
+ * press is renewed: the server lets go of one that stops being renewed.
+ * Messages go one after another, so a release never overtakes its press.
+ */
+(function initDpadHold() {
+  const RENEW_MS = 300;
+  let chain = Promise.resolve();
+  function post(value) {
+    chain = chain.then(() => fetch(api('/api/control'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'rcuHold', value })
+    }).then(r => r.json()).catch(e => ({ ok: false, error: e.message })));
+    return chain;
+  }
+  document.querySelectorAll('button[data-hold][data-rcu]').forEach(btn => {
+    const key = btn.dataset.rcu;
+    let renew = null;
+    function up() {
+      if (!renew) return;
+      clearInterval(renew);
+      renew = null;
+      btn.classList.remove('key-hit');
+      post({ key, down: false });
+    }
+    btn.addEventListener('pointerdown', e => {
+      if ((e.pointerType === 'mouse' && e.button !== 0) || btn.disabled || renew) return;
+      e.preventDefault();
+      btn.classList.add('key-hit');
+      post({ key, down: true }).then(j => { if (!j.ok) showErr(j.error || t('common.actionFailed', 'Action failed')); });
+      renew = setInterval(() => post({ key, down: true, renew: true }), RENEW_MS);
+    });
+    // On the window: a finger lifted off the button still lets go.
+    ['pointerup', 'pointercancel', 'blur'].forEach(ev => window.addEventListener(ev, up));
+    btn.addEventListener('click', e => { if (e.detail === 0) sendCommand('rcu', key); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  });
 })();
 
 // D-pad disclosure: uncollapse by default on mobile so the TV remote is immediately accessible.
