@@ -648,12 +648,12 @@
     </div>
     <div class="prot-row" id="row-idleoff" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="adv.idleOff">Switch off when idle</div>
-        <div class="prot-desc" data-t="adv.idleOff.desc">Switches the TV off after this long without a button pressed on the
-          remote, this dashboard or Home Assistant. The TV warns first, and any button keeps it on. Shorter than LG's own
-          4 Hours Auto Power Off.</div>
+        <div class="prot-title" data-t="adv.idleOff">Screen off when idle</div>
+        <div class="prot-desc" data-t="adv.idleOff.desc">Turns the screen off after this long without a button pressed on the
+          remote, this dashboard or Home Assistant. The app keeps running, and any button brings the picture back. The TV
+          warns first.</div>
       </div>
-      <div class="prot-status"><select class="pill-sel" id="sel_idleoff" aria-label="Switch off when idle" data-t-aria-label="adv.idleOff"
+      <div class="prot-status"><select class="pill-sel" id="sel_idleoff" aria-label="Screen off when idle" data-t-aria-label="adv.idleOff"
         onchange="sendCommand('idleOff', Number(this.value))">
         <option value="0" data-t="common.off">Off</option>
         <option value="1" data-t="adv.idleOff.1">1 minute (to try it)</option>

@@ -511,5 +511,6 @@ module.exports = {
   validate: validate,
   settings: settings,
   status: status,
-  bedtime: bedtime
+  bedtime: bedtime,
+  turnScreenOff: turnScreenOff
 };

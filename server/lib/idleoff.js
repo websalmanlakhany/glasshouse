@@ -1,12 +1,12 @@
 /*
- * Switches the TV off after a chosen time without a button press, sooner
- * than LG allows: its own setting (noOperationAutoOff, 'time' category)
- * takes only 3, 6, 12 or 24 hours on a G4 (webOS 9), and its menu offers
- * only 4. Off until a time is chosen (config.idleOff.minutes).
+ * Turns the screen off after a chosen time without a button press, so an
+ * unattended picture does not sit on the panel. Only the screen: the app in
+ * front keeps running, and any button brings the picture back where it was.
+ * Off until a time is chosen (config.idleOff.minutes).
  *
  * A remote key, or a command from the dashboard or Home Assistant, counts as
  * a press. When the time is up the TV shows an alert with a Stay on button,
- * and switches off two minutes later unless something is pressed.
+ * and turns the screen off two minutes later unless something is pressed.
  *
  * Strict ES5 for Node 0.12.2 on webOS 4.
  */
@@ -15,12 +15,15 @@
 var CHOICES = [0, 1, 30, 60, 120, 180];
 var CHECK_MS = 30000;
 var GRACE_MS = 120000;
-var WARNING = 'Nothing has been pressed for a while. The TV switches off in 2 minutes. Press any button to keep it on.';
+var WARNING = 'Nothing has been pressed for a while. The screen turns off in 2 minutes. Press any button to keep it on.';
 
 var config = null;
 var liveState = null;
 /** @type {function(string, any, function(any): void): void} */
 var control = function (a, v, cb) { cb({ ok: false }); };
+// Turns the screen off; tvweb.js gives screentime.js's, which gets past LG's screen saver.
+/** @type {function(function(any): void): void} */
+var screenOff = function (cb) { control('screenOff', null, cb); };
 /** @type {function(string, Object, function(any): void, string=): void} */
 var luna = function (uri, p, cb) { cb(null); };
 var sourceId = '';
@@ -43,9 +46,10 @@ function minutes() {
   return CHOICES.indexOf(m) !== -1 ? m : 0;
 }
 
-function tvOn() {
+// On with the picture showing; a screen already off is not counted.
+function screenShowing() {
   var p = (liveState && liveState.state.snapshot().power) || {};
-  return p.systemOn === true;
+  return p.systemOn === true && p.screenOn !== false;
 }
 
 function closeWarning() {
@@ -61,12 +65,12 @@ function warn() {
     cancel: later(function () {
       if (pending !== mine) return;
       pending = null;
-      // The TV reports itself off a second or so later; until then a check
-      // would warn again.
+      // The TV reports the screen off a second or so later; until then a
+      // check would warn again.
       lastActivity = now();
-      console.log('idleoff: no button pressed, switching off');
-      control('powerOff', null, function (r) {
-        if (!r || !r.ok) console.error('idleoff: power off failed: ' + ((r && r.error) || 'no answer'));
+      console.log('idleoff: no button pressed, turning the screen off');
+      screenOff(function (r) {
+        if (!r || !r.ok) console.error('idleoff: screen off failed: ' + ((r && r.error) || 'no answer'));
       });
     }, GRACE_MS)
   };
@@ -111,7 +115,7 @@ function keyPressed(code) {
 }
 
 function check() {
-  if (!minutes() || !tvOn()) {
+  if (!minutes() || !screenShowing()) {
     lastActivity = now();
     return closeWarning();
   }
@@ -123,7 +127,7 @@ function start() {
   lastActivity = now();
   watchKeys(true);
   checkTimer = setInterval(check, CHECK_MS);
-  console.log('idleoff: switching off after ' + minutes() + ' minutes without a button press');
+  console.log('idleoff: turning the screen off after ' + minutes() + ' minutes without a button press');
 }
 
 function stop() {
@@ -148,6 +152,7 @@ function apply(m) {
  * @param {any} opts.config the server's config
  * @param {any} opts.liveState state.init()'s result
  * @param {function(string, any, function(any): void): void} opts.control controls.doControl
+ * @param {function(function(any): void): void} [opts.screenOff] turns the screen off
  * @param {function(string, Object, function(any): void, string=): void} opts.luna
  * @param {string} opts.sourceId the app the alert is shown as
  * @param {function(boolean): void} opts.watchKeys
@@ -160,6 +165,7 @@ function init(opts) {
   config = opts.config;
   liveState = opts.liveState;
   control = opts.control;
+  if (opts.screenOff) screenOff = opts.screenOff;
   luna = opts.luna;
   sourceId = opts.sourceId;
   watchKeys = opts.watchKeys;

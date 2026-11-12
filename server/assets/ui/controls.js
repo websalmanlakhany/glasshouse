@@ -255,7 +255,7 @@ function powerTimerRows(timers) {
   const note = q('ontimer-autooff');
   if (note) note.hidden = !(timers && timers.on && timers.on.autoOff);
 }
-// Glasshouse's own switch-off after no button is pressed, beside LG's timers.
+// Glasshouse's own screen off after no button is pressed, beside LG's timers.
 function idleOffRow(idle) {
   const row = q('row-idleoff'), sel = q('sel_idleoff');
   if (!row || !sel) return;
