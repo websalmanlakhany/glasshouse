@@ -1803,6 +1803,7 @@ if (!CLI_MODE) {
     config: CONFIG,
     liveState: liveState,
     control: controls.doControl,
+    screenOff: screentime.turnScreenOff,
     luna: luna,
     sourceId: TOAST_SOURCE,
     watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('idleoff', on); },

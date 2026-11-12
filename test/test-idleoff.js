@@ -1,5 +1,5 @@
 /**
- * test/test-idleoff.js - Switching off after no button is pressed
+ * test/test-idleoff.js - Turning the screen off after no button is pressed
  */
 
 var assert = require('assert');
@@ -44,7 +44,7 @@ function setup(minutes) {
   };
 }
 
-// An hour without a press: the warning, then off two minutes later.
+// An hour without a press: the warning, then the screen off two minutes later.
 var s = setup(60);
 assert.deepEqual(s.watching, [true]);
 s.advance(59 * 60000);
@@ -54,10 +54,18 @@ assert.deepEqual(s.lunaCalls, ['com.webos.notification/createAlert']);
 s.advance(30000);
 assert.strictEqual(s.lunaCalls.length, 1, 'warned once');
 s.elapse();
-assert.deepEqual(s.calls, ['powerOff']);
+assert.deepEqual(s.calls, ['screenOff']);
 // Still reported on just after: no second warning.
 s.advance(30000);
-assert.strictEqual(s.lunaCalls.length, 1, 'no warning while the TV switches off');
+assert.strictEqual(s.lunaCalls.length, 1, 'no warning while the screen turns off');
+// The screen off: no warning however long it stays off.
+s.state.update('power', 'screenOn', false);
+s.advance(120 * 60000);
+assert.strictEqual(s.lunaCalls.length, 1, 'no warning while the screen is off');
+// A button brings the picture back, and the count starts from then.
+s.state.update('power', 'screenOn', true);
+s.advance(59 * 60000);
+assert.strictEqual(s.lunaCalls.length, 1, 'counted from the picture coming back');
 
 // A press during the warning closes it and keeps the TV on.
 s = setup(60);
